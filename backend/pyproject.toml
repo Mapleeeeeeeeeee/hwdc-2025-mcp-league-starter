@@ -10,8 +10,8 @@ dependencies = [
 ]
 
 [project.scripts]
-dev = "uvicorn main:app --reload --host 0.0.0.0 --port 8080"
-start = "uvicorn main:app --host 0.0.0.0 --port 8080"
+dev = "uvicorn src.main:app --reload --host 0.0.0.0 --port 8080"
+start = "uvicorn src.main:app --host 0.0.0.0 --port 8080"
 
 [tool.uv]
 dev-dependencies = [
@@ -20,3 +20,10 @@ dev-dependencies = [
     "ruff",
     "mypy",
 ]
+
+[tool.ruff]
+target-version = "py312"
+src = ["src"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
