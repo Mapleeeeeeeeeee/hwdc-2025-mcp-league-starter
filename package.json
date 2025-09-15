@@ -1,13 +1,46 @@
 {
   "name": "hwdc-2025-mcp-league-starter",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "HWDC 2025「Hello World」工作坊範例：MCP 大聯盟全端樣板",
+  "private": true,
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "concurrently \"cd backend && uv run dev\" \"pnpm --filter frontend dev\"",
+    "dev:frontend": "pnpm --filter frontend dev",
+    "dev:backend": "cd backend && uv run dev",
+    "build": "cd backend && uv build && pnpm --filter frontend build",
+    "build:frontend": "pnpm --filter frontend build",
+    "build:backend": "cd backend && uv build",
+    "test": "cd backend && uv run pytest && pnpm --filter frontend test",
+    "test:frontend": "pnpm --filter frontend test",
+    "test:backend": "cd backend && uv run pytest",
+    "lint": "cd backend && uv run ruff check . && pnpm --filter frontend lint",
+    "lint:frontend": "pnpm --filter frontend lint",
+    "lint:backend": "cd backend && uv run ruff check .",
+    "type-check": "cd backend && uv run mypy . && pnpm --filter frontend type-check",
+    "type-check:frontend": "pnpm --filter frontend type-check",
+    "type-check:backend": "cd backend && uv run mypy .",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:build": "docker-compose build"
   },
-  "keywords": [],
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  },
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=9"
+  },
+  "packageManager": "pnpm@10.14.0",
+  "keywords": [
+    "hwdc",
+    "hello-world",
+    "mcp",
+    "fullstack",
+    "fastapi",
+    "nextjs",
+    "docker",
+    "railway"
+  ],
   "author": "",
-  "license": "ISC",
-  "packageManager": "pnpm@10.14.0"
+  "license": "Apache-2.0"
 }
