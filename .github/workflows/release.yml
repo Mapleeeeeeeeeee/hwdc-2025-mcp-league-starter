@@ -3,6 +3,12 @@ name: Release
 on:
   push:
     branches: [ main ]
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+      - '.github/**'
+      - '.gitignore'
+      - 'LICENSE'
 
 permissions:
   contents: write
@@ -25,8 +31,6 @@ jobs:
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 9
 
       - name: Install dependencies
         run: pnpm install

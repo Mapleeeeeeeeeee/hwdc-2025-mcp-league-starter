@@ -52,8 +52,21 @@ pnpm install
 ## 💻 開發指令
 
 ```bash
-# 目前可用指令
-pnpm install          # 安裝依賴
+# 開發模式
+pnpm dev              # 同時啟動前後端開發伺服器
+pnpm dev:frontend     # 只啟動前端 (http://localhost:3001)
+pnpm dev:backend      # 只啟動後端 (http://localhost:8080)
+
+# 建置與測試
+pnpm build           # 建置所有專案
+pnpm test            # 執行所有測試
+pnpm lint            # 程式碼檢查
+pnpm type-check      # 類型檢查
+
+# Docker 操作
+pnpm docker:up       # 啟動 Docker 環境
+pnpm docker:down     # 停止 Docker 環境
+pnpm docker:build    # 重新建置映像檔
 ```
 
 ## 🤝 貢獻

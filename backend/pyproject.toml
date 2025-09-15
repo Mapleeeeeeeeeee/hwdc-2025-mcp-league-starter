@@ -1,7 +1,22 @@
 [project]
 name = "backend"
 version = "0.1.0"
-description = "Add your description here"
+description = "HWDC 2025 FastAPI Backend"
 readme = "README.md"
-requires-python = ">=3.13"
-dependencies = []
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+]
+
+[project.scripts]
+dev = "uvicorn main:app --reload --host 0.0.0.0 --port 8080"
+start = "uvicorn main:app --host 0.0.0.0 --port 8080"
+
+[tool.uv]
+dev-dependencies = [
+    "pytest",
+    "httpx",
+    "ruff",
+    "mypy",
+]
