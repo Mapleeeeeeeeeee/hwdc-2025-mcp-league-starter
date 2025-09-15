@@ -6,6 +6,13 @@ on:
   pull_request:
     branches: [ main ]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
 jobs:
   # Backend tests
   backend:
@@ -20,6 +27,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
 
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v5
@@ -30,6 +39,16 @@ jobs:
       uses: astral-sh/setup-uv@v4
       with:
         version: "latest"
+
+    - name: Cache uv dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/uv
+          backend/.venv
+        key: uv-${{ runner.os }}-${{ hashFiles('backend/uv.lock') }}
+        restore-keys: |
+          uv-${{ runner.os }}-
 
     - name: Install dependencies
       run: |
@@ -80,6 +99,16 @@ jobs:
       with:
         version: 9
 
+    - name: Cache Next.js
+      uses: actions/cache@v4
+      with:
+        path: |
+          frontend/.next/cache
+        key: nextjs-${{ runner.os }}-${{ hashFiles('frontend/pnpm-lock.yaml') }}-${{ hashFiles('frontend/next.config.ts') }}
+        restore-keys: |
+          nextjs-${{ runner.os }}-${{ hashFiles('frontend/pnpm-lock.yaml') }}-
+          nextjs-${{ runner.os }}-
+
     - name: Install dependencies
       run: pnpm install --frozen-lockfile
 
@@ -94,6 +123,9 @@ jobs:
 
     - name: Build
       run: pnpm run build
+      env:
+        NEXT_TELEMETRY_DISABLED: 1
+        CI: true
 
   # Docker build test (TODO: enable when docker-compose.yml is ready)
   # docker:
