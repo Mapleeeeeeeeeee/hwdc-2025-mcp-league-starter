@@ -1,20 +1,20 @@
 """Utilities for handling timezone-aware datetime objects."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 
 def utc_now() -> datetime:
     """Get the current UTC datetime with timezone information."""
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 def to_utc(dt: datetime) -> datetime:
     """Convert a datetime object to UTC."""
     if dt.tzinfo is None:
         # For naive datetimes, we assume they are in UTC
-        return dt.replace(tzinfo=timezone.utc)
-    return dt.astimezone(timezone.utc)
+        return dt.replace(tzinfo=UTC)
+    return dt.astimezone(UTC)
 
 
 def from_iso_string(iso_string: str) -> datetime:
@@ -25,7 +25,9 @@ def from_iso_string(iso_string: str) -> datetime:
 def to_iso_string(dt: datetime) -> str:
     """Convert a datetime object to ISO-8601 format string."""
     if dt.tzinfo is None:
-        raise ValueError("Cannot serialize naive datetime. Use timezone-aware datetime.")
+        raise ValueError(
+            "Cannot serialize naive datetime. Use timezone-aware datetime."
+        )
     return dt.isoformat()
 
 
