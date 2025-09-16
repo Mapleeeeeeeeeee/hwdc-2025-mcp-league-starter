@@ -8,7 +8,19 @@ class BaseAppException(HTTPException):
     Base application exception class.
 
     All custom application exceptions should inherit from this class.
-    Provides standardized error handling with i18n support and context.
+    Provides standardized error handling with i18n support, context,
+    and retry capabilities.
+
+    Args:
+        detail: Human-readable error message
+        status_code: HTTP status code
+        headers: Optional HTTP headers to include in response
+        i18n_key: Internationalization key for error message
+        i18n_params: Parameters for i18n message interpolation
+        context: Additional context information for debugging
+        retryable: Whether this error can be retried
+        retry_after: Suggested retry delay in seconds
+        max_retries: Maximum number of retry attempts
     """
 
     def __init__(
@@ -17,11 +29,19 @@ class BaseAppException(HTTPException):
         status_code: int = 500,
         headers: dict[str, Any] | None = None,
         i18n_key: str | None = None,
+        i18n_params: dict[str, Any] | None = None,
         context: dict[str, Any] | None = None,
+        retryable: bool = False,
+        retry_after: int | None = None,
+        max_retries: int = 3,
     ):
         super().__init__(status_code=status_code, detail=detail, headers=headers)
         self.i18n_key = i18n_key or f"errors.{self.__class__.__name__.lower()}"
+        self.i18n_params = i18n_params or {}
         self.context = context or {}
+        self.retryable = retryable
+        self.retry_after = retry_after
+        self.max_retries = max_retries
 
     def get_i18n_message(self, lang: str = "en") -> str:
         """
@@ -98,6 +118,10 @@ class TooManyRequestsError(ClientError):
     """429 Too Many Requests"""
 
     def __init__(self, detail: str = "Too many requests", **kwargs):
+        # Rate limit errors are typically retryable
+        kwargs.setdefault("retryable", True)
+        kwargs.setdefault("retry_after", 60)  # Default 1 minute retry delay
+        kwargs.setdefault("max_retries", 5)
         super().__init__(detail=detail, status_code=429, **kwargs)
 
 
@@ -120,6 +144,10 @@ class ServiceUnavailableError(ServerError):
     """503 Service Unavailable"""
 
     def __init__(self, detail: str = "Service temporarily unavailable", **kwargs):
+        # Service unavailable errors are typically retryable
+        kwargs.setdefault("retryable", True)
+        kwargs.setdefault("retry_after", 30)  # Default 30 seconds retry delay
+        kwargs.setdefault("max_retries", 3)
         super().__init__(detail=detail, status_code=503, **kwargs)
 
 
@@ -127,4 +155,8 @@ class GatewayTimeoutError(ServerError):
     """504 Gateway Timeout"""
 
     def __init__(self, detail: str = "Gateway timeout", **kwargs):
+        # Timeout errors are typically retryable
+        kwargs.setdefault("retryable", True)
+        kwargs.setdefault("retry_after", 30)  # Default 30 seconds retry delay
+        kwargs.setdefault("max_retries", 3)
         super().__init__(detail=detail, status_code=504, **kwargs)
