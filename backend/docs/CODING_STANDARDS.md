@@ -1,59 +1,25 @@
 # Backend Coding Standards
 
-This document outlines the coding standards and best practices for the backend development of this project. Adhering to these guidelines ensures code consistency, readability, and maintainability.
+This document defines coding standards and best practices for backend development. Following these guidelines ensures code consistency, readability, and maintainability.
 
-## 0. Project Structure
+> 💡 For project structure and development environment setup, see [Backend README](../README.md)
 
-We follow the `src` layout structure for better organization and packaging:
+## 1. Guiding Principles
 
-```
-backend/
-├── src/
-│   ├── __init__.py
-│   ├── main.py              # FastAPI application entry point
-│   ├── utils/
-│   │   ├── __init__.py
-│   │   └── datetime_utils.py # Timezone-aware datetime utilities
-│   ├── models/              # Data models and schemas
-│   ├── services/            # Business logic layer
-│   ├── repositories/        # Data access layer
-│   └── api/                 # API routes and controllers
-├── tests/                   # Test files
-├── docs/                    # Documentation
-├── pyproject.toml
-└── README.md
-```
+Our development is guided by a few core principles to ensure the creation of simple, readable, and maintainable code.
 
-**Benefits of `src` layout:**
-- Clear separation between source code and other project files
-- Better import organization and package discovery
-- Easier testing and deployment configuration
+- **Tests Pass**: The code must work correctly, with all tests passing.
+- **Expresses Intent**: Write clear, self-documenting code. Use meaningful names and a logical structure.
+- **DRY (Don't Repeat Yourself)**: Avoid code duplication by abstracting common functionality.
+- **Minimalism**: Keep the codebase as simple as possible. Avoid over-engineering and unnecessary complexity (YAGNI).
 
-## 1. General Principles
+### 1.1. SOLID Principles
 
-- **KISS (Keep It Simple, Stupid)**: Prefer simple, straightforward solutions over complex ones.
-- **DRY (Don't Repeat Yourself)**: Avoid duplicating code. Use functions, classes, and modules to promote reusability.
-- **YAGNI (You Aren't Gonna Need It)**: Don't add functionality until it's actually needed. Avoid over-engineering and premature optimization.
-- **Readability Counts**: Write code that is easy for other developers to understand.
+We emphasize three SOLID principles for robust architecture:
 
-### 1.1. The Three Rules of Simple Design
-
-Follow Kent Beck's three rules for simple design (in order of priority):
-
-1. **Tests Pass**: The code must work correctly and all tests must pass.
-2. **Expresses Intent**: The code clearly communicates what it does. Use meaningful names, clear structure, and appropriate abstractions.
-3. **No Duplication (DRY)**: Eliminate redundant code and knowledge. Extract common functionality into reusable components.
-4. **Minimal Elements**: Use the fewest number of classes, methods, and other elements necessary. Remove unnecessary complexity.
-
-*Note: Some variations include "Fewest Elements" as the fourth rule, emphasizing minimalism.*
-
-### 1.2. SOLID Principles (Core Focus)
-
-We focus on the following three SOLID principles for better software architecture:
-
-- **Single Responsibility Principle (S)**: A class should have only one reason to change. Each class or module should focus on a single responsibility or functionality.
-- **Open/Closed Principle (O)**: Software entities should be open for extension but closed for modification. Use inheritance, composition, and dependency injection to extend functionality without modifying existing code.
-- **Dependency Inversion Principle (D)**: High-level modules should not depend on low-level modules. Both should depend on abstractions. Use interfaces and dependency injection to achieve loose coupling.
+- **Single Responsibility (S)**: A class should have only one reason to change.
+- **Open/Closed (O)**: Entities should be open for extension but closed for modification.
+- **Dependency Inversion (D)**: High-level modules should depend on abstractions, not on low-level modules.
 
 ## 2. Naming Conventions
 
@@ -114,7 +80,11 @@ Use prefixes to indicate the function's primary action and return type.
 
 The semantics of `find_` are inconsistent across different frameworks and ORMs (sometimes returns `None`, sometimes returns multiple records). Using `require_` is more intuitive—when you read it, you immediately know the object "must exist".
 
-## 3. Type Hinting
+## 3. Code Formatting
+
+> 🔧 **Tool Configuration**: For detailed Ruff and pre-commit setup, see [Backend README](../README.md#development-tools)
+
+## 4. Type Hinting
 
 - **Mandatory Typing**: All new code **must** include type hints for function arguments and return values.
 - **Modern Syntax (Python 3.10+)**: Always use the modern, built-in generic types as standardized in PEP 585 and PEP 604.
@@ -124,13 +94,7 @@ The semantics of `find_` are inconsistent across different frameworks and ORMs (
   - **DO**: `class Container[T]: ...` and `def process[T](item: T) -> T: ...`
   - **Fallback**: Use traditional `TypeVar` if the new syntax is not yet supported by tools or libraries.
 - **Docstring Guidelines**: Avoid repeating type information in docstrings that is already captured by type hints. Focus docstrings on semantics, behavior, and contracts rather than types.
-- Our pre-commit hooks with Ruff will automatically enforce and correct these typings.
 
-## 4. Code Formatting & Linting
-
-- **Tool**: We use `Ruff` for both code formatting and linting to ensure a single, consistent style.
-- **Enforcement**: This is automatically enforced by pre-commit hooks. Before committing, `ruff format` and `ruff check --fix` will run, standardizing the code.
-- **Configuration**: All rules are defined in `backend/pyproject.toml` under the `[tool.ruff]` section.
 
 ## 5. Docstrings and Comments
 
@@ -147,15 +111,14 @@ The semantics of `find_` are inconsistent across different frameworks and ORMs (
   2. Third-party library imports (e.g., `fastapi`, `pydantic`).
   3. Local application imports.
 - **Local Imports**: Use relative imports within the `src` package to avoid hardcoding the package name:
-  - **DO**: `from utils.datetime_utils import utc_now`
-  - **DO**: `from .utils.datetime_utils import utc_now` (when in same package)
-  - **DON'T**: `from src.utils.datetime_utils import utc_now`
+  - **DO**: `from utils.time import utc_now`
+  - **DO**: `from .utils.time import utc_now` (when in same package)
+  - **DON'T**: `from src.utils.time import utc_now`
 - **Forbidden Practices**:
   - **No wildcard imports**: Never use `from module import *`. Always import specific names or use qualified imports.
   - **No confusing aliases**: Avoid aliases that conflict with standard library or well-known third-party names (e.g., don't use `import json as ujson`).
-- **Automation**: `Ruff` (`I` rule) will automatically check and help fix import order during the pre-commit phase.
 
-## 8. Date and Time Handling
+## 7. Date and Time Handling
 
 - **Timezone-Aware Datetimes**: All datetime objects **must** be timezone-aware and use UTC.
   - **DO**: `datetime.now(timezone.utc)`, `datetime.fromisoformat("2023-01-01T00:00:00+00:00")`
@@ -163,12 +126,12 @@ The semantics of `find_` are inconsistent across different frameworks and ORMs (
 - **Serialization**: Always serialize datetimes to ISO-8601 format with timezone information.
 - **Consistency**: Never mix naive and timezone-aware datetimes in the same codebase.
 
-### 8.1. Utility Functions
+### 7.1. Utility Functions
 
-Use the provided utility functions in `utils.datetime_utils` for consistent datetime handling:
+Use the provided utility functions in `utils.time` for consistent datetime handling:
 
 ```python
-from utils.datetime_utils import utc_now, to_iso_string, from_iso_string, ensure_utc
+from utils.time import utc_now, to_iso_string, from_iso_string, ensure_utc
 
 # Get current UTC time
 now = utc_now()
@@ -189,11 +152,3 @@ validated_dt = ensure_utc(some_datetime_value)
 - `from_iso_string(iso_string)`: Parse ISO-8601 string to datetime
 - `to_iso_string(dt)`: Convert datetime to ISO-8601 string
 - `ensure_utc(value)`: Validate and convert various inputs to UTC datetime
-
-## 9. Commit Messages
-
-- **Format**: We follow the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) specification.
-- **Enforcement**: A pre-commit hook is in place to validate the format of your commit messages.
-- **Common Types**: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`.
-  - Example: `feat: add user authentication endpoint`
-  - Example: `fix: correct pagination logic in list_users`
