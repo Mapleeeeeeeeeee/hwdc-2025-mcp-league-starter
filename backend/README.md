@@ -47,6 +47,15 @@ uv sync
 uv run dev
 ```
 
+### IDE Setup (VS Code)
+For proper Python intellisense and import resolution:
+
+1. **Select Python Interpreter**:
+   - Press `Cmd+Shift+P` (macOS) or `Ctrl+Shift+P` (Windows/Linux)
+   - Type "Python: Select Interpreter"
+   - Choose "Enter interpreter path..."
+   - Enter: `./backend/.venv/bin/python` (from project root) or `./.venv/bin/python` (from backend directory)
+
 ### Development Commands
 ```bash
 # Code formatting
@@ -127,10 +136,26 @@ Key highlights:
 - **`utils/`**: Common utility functions
 
 ### Dependency Management
-- Use `uv` to manage Python dependencies
-- Production dependencies defined in `pyproject.toml` `dependencies`
-- Development dependencies defined in `dev-dependencies`
-- Lock file: `uv.lock`
+- Use `uv add <package>` to add production dependencies
+- Use `uv add --dev <package>` to add development dependencies
+- Use `uv remove <package>` to remove dependencies
+- Use `uv sync` to install all dependencies from lock file
+- Lock file: `uv.lock` (auto-generated, should be committed)
+
+**Examples:**
+```bash
+# Add production dependency
+uv add fastapi
+
+# Add development dependency
+uv add --dev pytest
+
+# Remove dependency
+uv remove requests
+
+# Install all dependencies
+uv sync
+```
 
 ## 🧪 Testing
 

@@ -7,11 +7,12 @@ requires-python = ">=3.12"
 dependencies = [
     "fastapi",
     "uvicorn[standard]",
+    "pydantic-settings",
 ]
 
 [project.scripts]
-dev = "uvicorn src.main:app --reload --host 0.0.0.0 --port 8080"
-start = "uvicorn src.main:app --host 0.0.0.0 --port 8080"
+dev = "uvicorn src.main:app --reload --env-file .env"
+start = "uvicorn src.main:app --env-file .env"
 
 [tool.uv]
 dev-dependencies = [
@@ -23,8 +24,18 @@ dev-dependencies = [
 ]
 
 [tool.ruff]
+line-length = 88
 target-version = "py312"
 src = ["src"]
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "UP"]
+select = ["E", "F", "I", "UP", "W", "C4", "B"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+files = ["src/"]
