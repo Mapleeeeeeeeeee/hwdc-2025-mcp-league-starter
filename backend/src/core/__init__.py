@@ -16,6 +16,13 @@ from .exceptions import (
     UnauthorizedError,
     UnprocessableEntityError,
 )
+from .logging import (
+    AUDIT_LOG_FORMAT,
+    LOG_FORMAT,
+    get_audit_logger,
+    get_logger,
+    setup_logging,
+)
 from .middleware import TraceMiddleware
 
 __all__ = [
@@ -38,4 +45,10 @@ __all__ = [
     "GatewayTimeoutError",
     # Middleware
     "TraceMiddleware",
+    # Logging
+    "setup_logging",
+    "get_logger",
+    "get_audit_logger",
+    "LOG_FORMAT",
+    "AUDIT_LOG_FORMAT",
 ]

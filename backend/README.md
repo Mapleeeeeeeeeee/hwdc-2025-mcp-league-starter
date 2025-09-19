@@ -74,6 +74,12 @@ uv run pytest
 uv run mypy src/
 ```
 
+### Logging
+- Application startup automatically calls `setup_logging()` from `src.core` to configure formatters, handlers, and levels based on `settings`.
+- Use `from src.core import get_logger, get_audit_logger` in modules instead of `print()` so logs honour the central configuration.
+- Provide context via the `extra` kwarg (e.g. `extra={"user_id": user.id}`) and use `get_audit_logger()` for authentication, permission, or data-access events that require audit trails.
+- See [Coding Standards](docs/CODING_STANDARDS.md#8-logging) for detailed guidance and examples.
+
 ## 🔧 Development Tools Configuration
 
 ### Ruff

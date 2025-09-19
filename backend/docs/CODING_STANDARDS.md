@@ -152,3 +152,25 @@ validated_dt = ensure_utc(some_datetime_value)
 - `from_iso_string(iso_string)`: Parse ISO-8601 string to datetime
 - `to_iso_string(dt)`: Convert datetime to ISO-8601 string
 - `ensure_utc(value)`: Validate and convert various inputs to UTC datetime
+
+## 8. Logging
+
+- **Use the shared logger helpers**: Import from `src.core` rather than instantiating loggers manually.
+
+  ```python
+  from src.core import get_logger, get_audit_logger
+
+  logger = get_logger(__name__)
+  audit_logger = get_audit_logger()
+
+  logger.info("User created", extra={"user_id": user.id})
+  audit_logger.info(
+      "User login succeeded",
+      extra={"user": str(user.id), "action": "login"},
+  )
+  ```
+
+- **Avoid `print()` for diagnostics**: All runtime messages must go through the logging system so they respect log levels, formatters, and handlers configured via `setup_logging()`.
+- **Always provide context**: Use the `extra` dict to attach identifiers (user id, document id, etc.). This keeps logs actionable and supports future structured logging.
+- **Audit events**: Security- or compliance-relevant actions (authentication, permission changes, data export) should go through `get_audit_logger()` so they share the dedicated formatter/handlers.
+- **Respect log levels**: DEBUG for verbose diagnostics, INFO for high-level flow, WARNING for recoverable issues, ERROR for failures, CRITICAL only for system-wide outages.

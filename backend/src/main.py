@@ -4,7 +4,7 @@ from fastapi import FastAPI
 
 from src.api.exception_handlers import register_exception_handlers
 from src.config import settings
-from src.core.middleware import TraceMiddleware
+from src.core import TraceMiddleware, setup_logging
 from src.shared.response import create_success_response
 
 
@@ -14,6 +14,8 @@ def get_version() -> str:
         pyproject = tomllib.load(f)
     return pyproject["project"]["version"]
 
+
+setup_logging()
 
 app = FastAPI(
     title="HWDC 2025 Backend",
