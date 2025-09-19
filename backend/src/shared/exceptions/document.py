@@ -4,7 +4,7 @@ Document-related business exceptions for HWDC 2025 MCP League Starter.
 Contains exceptions specific to document management, processing, and sharing operations.
 """
 
-from core.exceptions import ConflictError, ForbiddenError, NotFoundError
+from src.core.exceptions import ConflictError, ForbiddenError, NotFoundError
 
 
 class DocumentNotFoundError(NotFoundError):

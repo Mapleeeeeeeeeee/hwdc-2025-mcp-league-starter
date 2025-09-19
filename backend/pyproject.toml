@@ -10,10 +10,6 @@ dependencies = [
     "pydantic-settings",
 ]
 
-[project.scripts]
-dev = "uvicorn src.main:app --reload --env-file .env"
-start = "uvicorn src.main:app --env-file .env"
-
 [tool.uv]
 dev-dependencies = [
     "pytest",

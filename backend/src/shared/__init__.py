@@ -17,7 +17,13 @@ from .exceptions import (
     UserNotFoundError,
     ValidationError,
 )
-from .response import APIResponse, BaseResponse, ErrorResponse, PaginatedResponse
+from .response import (
+    APIResponse,
+    BaseResponse,
+    ErrorResponse,
+    PaginatedResponse,
+    create_success_response,
+)
 
 __all__ = [
     # Response classes
@@ -25,6 +31,7 @@ __all__ = [
     "APIResponse",
     "PaginatedResponse",
     "ErrorResponse",
+    "create_success_response",
     # User-related exceptions
     "UserNotFoundError",
     "UserAlreadyExistsError",

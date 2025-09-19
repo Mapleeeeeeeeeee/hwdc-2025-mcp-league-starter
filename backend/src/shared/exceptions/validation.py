@@ -4,7 +4,7 @@ Validation business exceptions for HWDC 2025 MCP League Starter.
 Contains exceptions specific to input validation and business rule validation.
 """
 
-from core.exceptions import BadRequestError, UnprocessableEntityError
+from src.core.exceptions import BadRequestError, UnprocessableEntityError
 
 
 class InvalidInputError(BadRequestError):

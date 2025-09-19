@@ -5,7 +5,7 @@ Contains exceptions specific to user management, authentication,
 and user-related operations.
 """
 
-from core.exceptions import ConflictError, ForbiddenError, NotFoundError
+from src.core.exceptions import ConflictError, ForbiddenError, NotFoundError
 
 
 class UserNotFoundError(NotFoundError):

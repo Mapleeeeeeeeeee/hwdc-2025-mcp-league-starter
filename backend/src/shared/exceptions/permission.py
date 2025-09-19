@@ -4,7 +4,7 @@ Permission and authorization business exceptions for HWDC 2025 MCP League Starte
 Contains exceptions specific to permission checking, authentication, and access control.
 """
 
-from core.exceptions import ForbiddenError, UnauthorizedError
+from src.core.exceptions import ForbiddenError, UnauthorizedError
 
 
 class PermissionDeniedError(ForbiddenError):

@@ -4,7 +4,7 @@ Resource and quota business exceptions for HWDC 2025 MCP League Starter.
 Contains exceptions specific to resource management, quotas, and resource conflicts.
 """
 
-from core.exceptions import ConflictError
+from src.core.exceptions import ConflictError
 
 
 class ResourceAlreadyExistsError(ConflictError):
