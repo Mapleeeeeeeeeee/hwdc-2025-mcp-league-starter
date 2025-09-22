@@ -4,6 +4,10 @@ from .document import (
     DocumentLockedError,
     DocumentNotFoundError,
 )
+from .llm import (
+    LLMProviderNotConfiguredError,
+    LLMProviderUnsupportedError,
+)
 from .permission import (
     AuthenticationRequiredError,
     PermissionDeniedError,
@@ -35,6 +39,9 @@ __all__ = [
     "DocumentNotFoundError",
     "DocumentAccessDeniedError",
     "DocumentLockedError",
+    # LLM provider exceptions
+    "LLMProviderNotConfiguredError",
+    "LLMProviderUnsupportedError",
     # Permission & Authorization exceptions
     "PermissionDeniedError",
     "AuthenticationRequiredError",

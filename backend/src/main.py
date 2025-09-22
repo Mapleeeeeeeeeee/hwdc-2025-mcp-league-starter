@@ -3,6 +3,7 @@ import tomllib
 from fastapi import FastAPI
 
 from src.api.exception_handlers import register_exception_handlers
+from src.api.v1.conversation_router import router as conversation_router
 from src.config import settings
 from src.core import TraceMiddleware, setup_logging
 from src.shared.response import create_success_response
@@ -28,6 +29,9 @@ app.add_middleware(TraceMiddleware)
 
 # Register global exception handlers
 register_exception_handlers(app)
+
+# Register routers
+app.include_router(conversation_router, prefix="/api/v1")
 
 
 @app.get("/")

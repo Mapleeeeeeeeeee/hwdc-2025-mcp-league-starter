@@ -1,0 +1,59 @@
+"""Provider factory implementations for supported LLM vendors."""
+
+from __future__ import annotations
+
+from collections.abc import Callable, Mapping
+from typing import Any
+
+from agno.models.openai import OpenAIChat
+
+from src.config import settings
+from src.shared.exceptions import (
+    LLMProviderNotConfiguredError,
+    LLMProviderUnsupportedError,
+)
+
+from .model_config import LLMModelConfig
+
+ProviderFactory = Callable[[LLMModelConfig, Mapping[str, Any]], Any]
+
+
+def _build_openai_model(
+    config: LLMModelConfig,
+    overrides: Mapping[str, Any],
+) -> OpenAIChat:
+    api_key = settings.get_secret(config.api_key_env)
+    if not api_key:
+        raise LLMProviderNotConfiguredError(
+            provider="openai",
+            secret_name=config.api_key_env,
+        )
+    params: dict[str, Any] = {
+        "id": config.model_id,
+        "api_key": api_key,
+    }
+    if config.base_url:
+        params["base_url"] = config.base_url
+    params.update(config.default_params)
+    params.update(overrides)
+    return OpenAIChat(**params)
+
+
+_PROVIDER_FACTORIES: dict[str, ProviderFactory] = {
+    "openai": _build_openai_model,
+}
+
+
+def build_model(
+    config: LLMModelConfig,
+    overrides: Mapping[str, Any] | None = None,
+) -> Any:
+    """Create a provider-specific model instance based on configuration."""
+
+    factory = _PROVIDER_FACTORIES.get(config.provider)
+    if factory is None:
+        raise LLMProviderUnsupportedError(provider=config.provider)
+    return factory(config, overrides or {})
+
+
+__all__ = ["build_model", "ProviderFactory"]
