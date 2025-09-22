@@ -15,8 +15,7 @@ repos:
     hooks:
       - id: mypy
         files: ^backend/
-        additional_dependencies: [types-all]
-        args: [--ignore-missing-imports]
+        args: [--ignore-missing-imports, backend/]
         pass_filenames: false
 
   # TypeScript/JavaScript linting and formatting
@@ -38,6 +37,7 @@ repos:
     hooks:
       - id: prettier
         files: ^frontend/
+        exclude: pnpm-lock\.yaml|package-lock\.json|yarn\.lock
         types_or: [javascript, jsx, ts, tsx, json, yaml, markdown]
 
   # TypeScript type checking
@@ -55,10 +55,15 @@ repos:
     rev: v5.0.0
     hooks:
       - id: trailing-whitespace
+        files: ^(backend/|frontend/)
       - id: end-of-file-fixer
+        files: ^(backend/|frontend/)
       - id: check-yaml
+        files: ^(backend/|frontend/)
       - id: check-json
+        files: ^(backend/|frontend/)
       - id: check-toml
+        files: ^backend/
       - id: check-merge-conflict
       - id: check-added-large-files
         args: [--maxkb=1000]

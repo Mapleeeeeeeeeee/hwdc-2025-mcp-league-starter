@@ -40,6 +40,16 @@ ENV/
 env/
 *.pyc
 
+# Python Tools Cache
+.ruff_cache/
+.mypy_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# UV (Python package manager)
+.uv_cache/
+
 # Node.js / Next.js
 node_modules/
 npm-debug.log*
@@ -76,6 +86,9 @@ pids
 coverage/
 *.lcov
 .nyc_output
+
+# Pre-commit
+.pre-commit-cache/
 
 # Docker
 .dockerignore
