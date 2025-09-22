@@ -4,25 +4,29 @@ FastAPI backend development guide, including project structure, environment setu
 
 ## 🏗️ Project Structure
 
-We adopt the `src` layout structure for better organization and packaging:
+We adopt the `src` layout structure, organized by architectural layers according to Clean Architecture principles.
 
 ```
 backend/
 ├── src/
 │   ├── __init__.py
-│   ├── main.py              # FastAPI application entry point
-│   ├── utils/
-│   │   ├── __init__.py
-│   │   └── time.py          # Timezone-aware time utilities
-│   ├── models/              # Data models and schemas
-│   ├── services/            # Business logic layer
-│   ├── repositories/        # Data access layer
-│   └── api/                 # API routes and controllers
-├── tests/                   # Test files
-├── docs/                    # Documentation
+│   ├── main.py             # FastAPI application instance and startup logic
+│   │
+│   ├── api/                # API Layer (HTTP entry points)
+│   ├── core/               # Core configurations (logging, middleware)
+│   ├── domain/             # Core business models and logic
+│   ├── usecases/           # Application-specific business flows
+│   ├── models/             # API Models (DTOs / Schemas)
+│   ├── integrations/       # External services (DB, LLM clients)
+│   └── shared/             # Code shared across layers (exceptions, responses)
+│
+├── tests/                  # Test files
+├── docs/                   # Project documentation
 ├── pyproject.toml
 └── README.md
 ```
+
+For a detailed explanation of each directory's role, please see the [Backend Folder Structure documentation](docs/FOLDER_STRUCTURE.md).
 
 ### Benefits of `src` layout
 - Clear separation between source code and other project files
@@ -135,11 +139,14 @@ Key highlights:
 - Timezone-aware datetime handling
 
 ### Directory Responsibilities
-- **`api/`**: FastAPI route definitions and HTTP handling
-- **`services/`**: Business logic implementation, no direct HTTP handling
-- **`repositories/`**: Data access layer, abstracts database operations
-- **`models/`**: Pydantic models and data structure definitions
-- **`utils/`**: Common utility functions
+- **`api/`**: Defines API endpoints, handles HTTP requests/responses, and calls use cases.
+- **`usecases/`**: Orchestrates application-specific business logic flows.
+- **`domain/`**: Contains core, independent business logic and models (Entities).
+- **`integrations/`**: Manages communication with all external services (e.g., database, third-party APIs).
+- **`models/`**: Defines Pydantic models (DTOs) for API data contracts.
+- **`core/`**: Holds shared configurations like logging, middleware, etc.
+
+For a complete guide to the architecture, see the [architecture documentation](docs/architecture/).
 
 ### Dependency Management
 - Use `uv add <package>` to add production dependencies

@@ -1,78 +1,56 @@
-# API Layer Guide
+# API 層責任
 
-API 層（`backend/src/api/`）負責處理 HTTP 介面，將外部請求轉換為應用層可以消化的輸入，並把服務結果轉換成統一的回應。
+API 層（`backend/src/api/`）只處理輸入輸出：解析 HTTP、校驗資料、交給 application service，最後用標準格式傳回結果。
 
-## 主要責任
-- 宣告路由與 HTTP 方法，掛載到 FastAPI `APIRouter`。
-- 驗證請求輸入：路由函式只接收已驗證的 Pydantic 模型或基本型別。
-- 呼叫對應的 Application Service（`services/`），並處理回傳資料。
-- 統一回應格式：使用 `create_success_response()`、`create_paginated_response()` 產生標準 JSON。
-- 依賴注入：在 router 層決定 service/repository 的組合方式。
+## 定位
+- 路由只負責宣告 HTTP 介面與依賴注入（透過 `Depends` 從 `core/container.py` 取得 service 介面）。
+- JSON 進來先交給 Pydantic 2.x DTO 驗證，確保 runtime/i18n/預設值都被處理。
+- 驗證後可轉為 domain value object，再交給 application service；API 不做任何業務決策。
+- Service 回傳 domain model 或 primitive 後，API 以 Response DTO (`APIBaseModel.model_validate(...)`) 加上 `create_success_response()` / `create_paginated_response()` 統一回應。
 
-## 禁止事項
-- 不自行編寫業務邏輯或資料存取邏輯。
-- 不直接產生 HTTP 回應字典（請透過 shared response helper）。
-- 不在路由內部抓取資料庫連線或第三方 client，請透過 services/repositories 處理。
+## 強型別與命名
+- 所有 Request/Response DTO (Data Transfer Objects) 都放在 `src/models/`，繼承專案共用 `APIBaseModel`。
+- 這些 DTOs 也常被稱為 **Schemas**，兩者在本專案中可視為同義詞，專指 API 的資料合約。
+- `APIBaseModel` 定義於 `src/models/base.py`，統一設定：
+  ```python
+  from pydantic import BaseModel, ConfigDict
+  from src.shared.naming import to_camel
 
-## 命名與結構
+  class APIBaseModel(BaseModel):
+      model_config = ConfigDict(
+          populate_by_name=True,
+          alias_generator=to_camel,
+      )
+  ```
+- 繼承後自動開啟 `alias` 與駝峰對應：
+  ```python
+  from src.models.base import APIBaseModel
+
+  class ConversationRequest(APIBaseModel):
+      conversation_id: str
+      history: list[Message]
+  ```
+- FastAPI router 需在參數上加 `Body(...)` 或直接型別註記，確保 runtime 驗證會被觸發。
+- 回傳時使用 `model_dump(by_alias=True)`，避免在 API 層手動處理 key 命名。
+- 這些 DTO 屬於 application 層的 transport 合約，請在進入 service 前轉為 domain value object 或內部資料結構，維持核心邏輯獨立於 HTTP 命名。
+
+## 邊界守則
+- **禁止** 在 router 內寫業務邏輯、資料存取、第三方呼叫或手工建構 JSON。
+- **禁止** 捕捉服務層例外；統一由 `exception_handlers.py` 和 `BaseAppException` 處理。
+- **允許** 的副作用只有依賴注入、權限或節流等純 transport concern。
+
+## 資料流摘要
+1. FastAPI 解析請求 → Pydantic DTO 驗證並進行 camelCase ↔ snake_case 映射。
+2. 取得依賴（service、repository 介面）。
+3. 將 DTO 傳給 service；service 回傳 typed 結果或 async generator。
+4. API 層呼叫 shared response helper，附上 trace_id 與 meta，輸出 JSON。
+
+## 結構建議
 ```
 backend/src/api/
 └── v1/
     ├── __init__.py
-    └── conversation_router.py   # 文字對話 / LLM 相關路由
+    └── conversation_router.py
 ```
-- 建議以版本號（例如 `v1`）分層，方便未來版本並存。
-- 單一 router 檔案專注於一個 bounded context（這裡以 LLM 對話為例）。
-- 檔案內可宣告 `router = APIRouter(prefix="/conversations", tags=["Conversations"])`，並在 `main.py` 統一掛載。
-
-## 依賴注入範例
-```python
-# backend/src/api/v1/conversation_router.py
-from fastapi import APIRouter, Depends, Query
-from fastapi.responses import StreamingResponse
-
-from src.models.conversation import ConversationRequest
-from src.services.conversation.service import ConversationService
-from src.shared.response import create_success_response
-
-router = APIRouter(prefix="/conversations", tags=["Conversations"])
-
-
-def get_conversation_service() -> ConversationService:
-    # 目前直接建構；若日後需要其他依賴，可改為 Depends factory
-    return ConversationService()
-
-
-@router.post("/messages")
-async def send_message(
-    payload: ConversationRequest,
-    service: ConversationService = Depends(get_conversation_service),
-    stream: bool = Query(False, description="是否以串流方式回傳回覆"),
-):
-    if stream:
-        # 建議使用 Server-Sent Events (SSE) 方便前端瀏覽器直接串流文字
-        async def event_source():
-            async for chunk in service.stream_reply(payload):
-                yield f"data: {chunk.model_dump_json()}\n\n"
-
-        return StreamingResponse(event_source(), media_type="text/event-stream")
-
-    reply = await service.generate_reply(payload)
-    return create_success_response(data=reply, message="Reply generated")
-```
-- `Depends` 用於提供 service 實例，後續可替換測試 double 或加上 cache。
-- 串流情境建議採用 **Server-Sent Events (SSE)**，透過 `text/event-stream` 在瀏覽器端最容易處理。若未來需要雙向即時通訊，再評估 WebSocket。
-- 非串流情境回傳標準 JSON，以 `create_success_response` 保持 `success/data/message/trace_id` 結構。
-
-## 錯誤處理策略
-- 路由函式不應自行 try/except；讓 service 拋出的 `BaseAppException` 交給已註冊的 handler (`backend/src/api/exception_handlers.py:20-233`)。
-- 參數驗證失敗會由 FastAPI 自動拋出 `RequestValidationError`，以及我們的 handler 轉換為統一格式。
-
-## 測試建議
-- **單元測試**：可利用 FastAPI 的 `TestClient` 測試路由是否呼叫正確的 use case（透過 Mock service）。
-- **整合測試**：在 `tests/integration/api/` 使用實際 service/repository 來確保流程完整。
-
-## 接下來怎麼做
-1. 建立版本化 router 資料夾 `api/v1/`。
-2. 實作第一個 router 範例（例如 `mcp_router.py`），並在 `main.py` 掛載。
-3. 隨著功能擴充，針對 router 補上對應的測試與文件。
+- 版本資料夾保持向後相容；每個 router 聚焦單一 bounded context。
+- 測試應透過 FastAPI `TestClient` 或 `httpx.AsyncClient`，驗證 DTO 驗證與回應格式是否符合上述約定。
