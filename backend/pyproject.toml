@@ -9,6 +9,8 @@ dependencies = [
     "uvicorn[standard]",
     "pydantic-settings",
     "agno",
+    "ollama>=0.5.4",
+    "openai>=1.108.1",
 ]
 
 [tool.uv]
