@@ -7,6 +7,7 @@ from typing import Any
 from agno.agent import Agent
 
 from .config_store import ModelConfigStore
+from .model_config import LLMModelConfig
 from .providers import build_model
 
 
@@ -37,25 +38,17 @@ class ConversationAgentFactory:
         )
         return agent
 
-    def get_available_models(self) -> list[dict[str, Any]]:
-        models = []
-        for config in self._store.list_configs():
-            models.append(
-                {
-                    "key": config.key,
-                    "provider": config.provider,
-                    "modelId": config.model_id,
-                    "supportsStreaming": config.supports_streaming,
-                    "metadata": config.metadata,
-                }
-            )
-        return models
+    def get_available_models(self) -> list[LLMModelConfig]:
+        return self._store.list_configs()
 
     def get_active_model_key(self) -> str:
         return self._store.get_active_model_key()
 
     def set_active_model_key(self, key: str) -> None:
         self._store.set_active_model_key(key)
+
+    def register_model(self, config: LLMModelConfig) -> None:
+        self._store.upsert_config(config)
 
 
 __all__ = ["ConversationAgentFactory"]

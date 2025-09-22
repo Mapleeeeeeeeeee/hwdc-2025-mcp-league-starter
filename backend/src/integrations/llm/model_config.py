@@ -14,12 +14,13 @@ class LLMModelConfig(BaseModel):
         description="Unique identifier used by clients to select the model",
     )
     provider: str = Field(
-        description="Provider slug, e.g. 'openai', 'together'",
+        description="Provider slug, e.g. 'openai', 'ollama'",
     )
     model_id: str = Field(
         description="Provider-specific model identifier",
     )
-    api_key_env: str = Field(
+    api_key_env: str | None = Field(
+        default=None,
         description="Environment variable name that stores the provider API key",
     )
     base_url: str | None = Field(
@@ -39,8 +40,10 @@ class LLMModelConfig(BaseModel):
 
     @field_validator("api_key_env")
     @classmethod
-    def _ensure_no_secrets(cls, value: str) -> str:
+    def _ensure_no_secrets(cls, value: str | None) -> str | None:
         # 防止直接把 API key 寫進設定檔
+        if value is None:
+            return None
         if value.strip() == "" or "=" in value:
             msg = (
                 "api_key_env must reference an environment variable name, "

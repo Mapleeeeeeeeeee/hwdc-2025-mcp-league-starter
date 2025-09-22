@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import Field, field_validator
 
@@ -63,11 +63,24 @@ class LLMModelDescriptor(APIBaseModel):
     model_id: str
     supports_streaming: bool
     metadata: dict[str, str | int | float | bool | None] | None = None
+    base_url: str | None = None
 
 
 class ListModelsResponse(APIBaseModel):
     active_model_key: str
     models: list[LLMModelDescriptor]
+
+
+class UpsertLLMModelRequest(APIBaseModel):
+    key: str
+    provider: str
+    model_id: str
+    api_key_env: str | None = None
+    base_url: str | None = None
+    default_params: dict[str, Any] | None = None
+    supports_streaming: bool = True
+    metadata: dict[str, Any] | None = None
+    set_active: bool = False
 
 
 __all__ = [
@@ -77,4 +90,5 @@ __all__ = [
     "ConversationStreamChunk",
     "LLMModelDescriptor",
     "ListModelsResponse",
+    "UpsertLLMModelRequest",
 ]

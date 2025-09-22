@@ -22,7 +22,14 @@ _DEFAULT_MODELS: list[dict[str, Any]] = [
         "supports_streaming": True,
         "default_params": {"temperature": 0.7},
         "metadata": {"display_name": "OpenAI GPT-4o mini"},
-    }
+    },
+    {
+        "key": "ollama:llama3.1",
+        "provider": "ollama",
+        "model_id": "llama3.1",
+        "supports_streaming": True,
+        "metadata": {"display_name": "Ollama Llama 3.1"},
+    },
 ]
 _DEFAULT_ACTIVE_KEY: str = str(_DEFAULT_MODELS[0]["key"])
 
@@ -72,11 +79,12 @@ class ModelConfigStore:
         self._write_active_key(key)
 
     def upsert_configs(self, configs: Iterable[LLMModelConfig]) -> None:
-        payload = LLMModelRegistryFile(models=list(configs))
-        with self._lock:
-            self._models_path.parent.mkdir(parents=True, exist_ok=True)
-            serialized = payload.model_dump_json(indent=2)
-            self._models_path.write_text(serialized, encoding="utf-8")
+        self._write_configs(configs)
+
+    def upsert_config(self, config: LLMModelConfig) -> None:
+        existing = {item.key: item for item in self.list_configs()}
+        existing[config.key] = config
+        self._write_configs(existing.values())
 
     def _read_models_file(self) -> list[dict[str, Any]]:
         with self._lock:
@@ -117,6 +125,13 @@ class ModelConfigStore:
         with self._lock:
             self._active_path.parent.mkdir(parents=True, exist_ok=True)
             self._active_path.write_text(key, encoding="utf-8")
+
+    def _write_configs(self, configs: Iterable[LLMModelConfig]) -> None:
+        payload = LLMModelRegistryFile(models=list(configs))
+        with self._lock:
+            self._models_path.parent.mkdir(parents=True, exist_ok=True)
+            serialized = payload.model_dump_json(indent=2)
+            self._models_path.write_text(serialized, encoding="utf-8")
 
 
 __all__ = ["ModelConfigStore"]

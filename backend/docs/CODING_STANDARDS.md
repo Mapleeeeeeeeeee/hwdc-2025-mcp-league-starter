@@ -110,10 +110,10 @@ The semantics of `find_` are inconsistent across different frameworks and ORMs (
   1. Standard library imports (e.g., `os`, `sys`).
   2. Third-party library imports (e.g., `fastapi`, `pydantic`).
   3. Local application imports.
-- **Local Imports**: Use relative imports within the `src` package to avoid hardcoding the package name:
-  - **DO**: `from utils.time import utc_now`
-  - **DO**: `from .utils.time import utc_now` (when in same package)
-  - **DON'T**: `from src.utils.time import utc_now`
+- **Local Imports**: Use absolute imports from the `src` root to ensure consistency and avoid confusion with relative paths.
+  - **DO**: `from src.utils.time import utc_now`
+  - **DON'T**: `from utils.time import utc_now`
+  - **AVOID**: `from .utils.time import utc_now` (relative imports) unless necessary to prevent circular dependencies.
 - **Forbidden Practices**:
   - **No wildcard imports**: Never use `from module import *`. Always import specific names or use qualified imports.
   - **No confusing aliases**: Avoid aliases that conflict with standard library or well-known third-party names (e.g., don't use `import json as ujson`).

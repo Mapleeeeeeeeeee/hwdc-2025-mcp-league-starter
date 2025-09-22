@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable, Mapping
 from typing import Any
 
+from agno.models.ollama import Ollama
 from agno.models.openai import OpenAIChat
 
 from src.config import settings
@@ -22,11 +23,12 @@ def _build_openai_model(
     config: LLMModelConfig,
     overrides: Mapping[str, Any],
 ) -> OpenAIChat:
-    api_key = settings.get_secret(config.api_key_env)
+    secret_name = config.api_key_env or "OPENAI_API_KEY"
+    api_key = settings.get_secret(secret_name)
     if not api_key:
         raise LLMProviderNotConfiguredError(
             provider="openai",
-            secret_name=config.api_key_env,
+            secret_name=secret_name,
         )
     params: dict[str, Any] = {
         "id": config.model_id,
@@ -39,8 +41,21 @@ def _build_openai_model(
     return OpenAIChat(**params)
 
 
+def _build_ollama_model(
+    config: LLMModelConfig,
+    overrides: Mapping[str, Any],
+) -> Ollama:
+    params: dict[str, Any] = {"id": config.model_id}
+    if config.base_url:
+        params["host"] = config.base_url
+    params.update(config.default_params)
+    params.update(overrides)
+    return Ollama(**params)
+
+
 _PROVIDER_FACTORIES: dict[str, ProviderFactory] = {
     "openai": _build_openai_model,
+    "ollama": _build_ollama_model,
 }
 
 
