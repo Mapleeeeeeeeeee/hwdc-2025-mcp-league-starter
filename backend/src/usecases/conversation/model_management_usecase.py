@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from src.integrations.llm import ConversationAgentFactory, LLMModelConfig
-from src.models.conversation import (
+from src.models import (
     ListModelsResponse,
     LLMModelDescriptor,
     UpsertLLMModelRequest,

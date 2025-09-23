@@ -72,13 +72,14 @@ class ModelConfigStore:
             return _DEFAULT_ACTIVE_KEY
         try:
             data = json.loads(raw)
-            if isinstance(data, dict) and "active_model_key" in data:
-                value = data["active_model_key"]
-                if isinstance(value, str) and value:
-                    return value
-        except json.JSONDecodeError:
-            # backwards compatibility with legacy plain-text format
-            return raw
+        except json.JSONDecodeError as exc:
+            msg = "Invalid active model file format"
+            raise ValueError(msg) from exc
+        if isinstance(data, dict) and "active_model_key" in data:
+            value = data["active_model_key"]
+            if isinstance(value, str) and value:
+                return value
+        raise ValueError("Active model file must contain 'active_model_key'")
         return _DEFAULT_ACTIVE_KEY
 
     def set_active_model_key(self, key: str) -> None:
@@ -98,30 +99,14 @@ class ModelConfigStore:
         with self._lock:
             if not self._models_path.exists():
                 self._write_default_models()
-                return [cfg.model_copy(deep=True) for cfg in _DEFAULT_MODEL_CONFIGS]
             raw = self._models_path.read_text(encoding="utf-8")
         if raw.strip() == "":
-            return [cfg.model_copy(deep=True) for cfg in _DEFAULT_MODEL_CONFIGS]
+            raise ValueError("Model configuration file cannot be empty")
         try:
             registry = LLMModelRegistryFile.model_validate_json(raw)
-        except ValidationError:
-            try:
-                data = json.loads(raw)
-            except json.JSONDecodeError as exc:
-                msg = "Invalid model configuration file format"
-                raise ValueError(msg) from exc
-        else:
-            return [model.model_copy(deep=True) for model in registry.models]
-        if isinstance(data, dict) and "models" in data:
-            models = data["models"]
-        elif isinstance(data, list):
-            models = data
-        else:
-            msg = "Invalid model configuration file format"
-            raise ValueError(msg)
-        if not isinstance(models, list):
-            raise ValueError("Model configuration file must contain a list of models")
-        return [LLMModelConfig(**dict(item)) for item in models]
+        except ValidationError as exc:
+            raise ValueError("Invalid model configuration file format") from exc
+        return [model.model_copy(deep=True) for model in registry.models]
 
     def _ensure_files(self) -> None:
         with self._lock:
@@ -152,6 +137,3 @@ class ModelConfigStore:
             self._models_path.parent.mkdir(parents=True, exist_ok=True)
             serialized = payload.model_dump_json(indent=2)
             self._models_path.write_text(serialized, encoding="utf-8")
-
-
-__all__ = ["ModelConfigStore"]

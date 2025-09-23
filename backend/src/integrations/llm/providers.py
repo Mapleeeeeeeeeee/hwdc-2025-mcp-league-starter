@@ -69,6 +69,3 @@ def build_model(
     if factory is None:
         raise LLMProviderUnsupportedError(provider=config.provider)
     return factory(config, overrides or {})
-
-
-__all__ = ["build_model", "ProviderFactory"]

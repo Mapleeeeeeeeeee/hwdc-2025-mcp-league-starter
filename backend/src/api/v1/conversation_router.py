@@ -9,7 +9,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Response
 from src.integrations.llm import ConversationAgentFactory
-from src.models.conversation import (
+from src.models import (
     ConversationReply,
     ConversationRequest,
     ListModelsResponse,

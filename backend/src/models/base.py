@@ -17,6 +17,3 @@ class APIBaseModel(BaseModel):
         populate_by_name=True,
         alias_generator=_to_camel,
     )
-
-
-__all__ = ["APIBaseModel"]

@@ -49,6 +49,3 @@ class ConversationAgentFactory:
 
     def register_model(self, config: LLMModelConfig) -> None:
         self._store.upsert_config(config)
-
-
-__all__ = ["ConversationAgentFactory"]
