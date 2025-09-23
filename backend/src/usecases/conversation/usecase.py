@@ -20,8 +20,8 @@ from ...models.conversation import (
 class ConversationUsecase:
     """Coordinates LLM interactions for conversation endpoints."""
 
-    def __init__(self, agent_factory: ConversationAgentFactory | None = None) -> None:
-        self._agent_factory = agent_factory or ConversationAgentFactory()
+    def __init__(self, agent_factory: ConversationAgentFactory) -> None:
+        self._agent_factory = agent_factory
 
     async def generate_reply(self, payload: ConversationRequest) -> ConversationReply:
         agent = self._agent_factory.create_agent(
