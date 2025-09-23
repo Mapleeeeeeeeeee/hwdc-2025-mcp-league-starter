@@ -80,12 +80,11 @@ class ModelConfigStore:
             if isinstance(value, str) and value:
                 return value
         raise ValueError("Active model file must contain 'active_model_key'")
-        return _DEFAULT_ACTIVE_KEY
 
     def set_active_model_key(self, key: str) -> None:
         # 先驗證是否存在
         _ = self.get_config(key)
-        self._write_active_key(key)
+        self._write_active_key_with_lock(key)
 
     def upsert_configs(self, configs: Iterable[LLMModelConfig]) -> None:
         self._write_configs(configs)
@@ -124,10 +123,13 @@ class ModelConfigStore:
         self._models_path.write_text(serialized, encoding="utf-8")
 
     def _write_active_key(self, key: str) -> None:
+        self._active_path.parent.mkdir(parents=True, exist_ok=True)
+        payload = json.dumps({"active_model_key": key}, indent=2)
+        self._active_path.write_text(payload, encoding="utf-8")
+
+    def _write_active_key_with_lock(self, key: str) -> None:
         with self._lock:
-            self._active_path.parent.mkdir(parents=True, exist_ok=True)
-            payload = json.dumps({"active_model_key": key}, indent=2)
-            self._active_path.write_text(payload, encoding="utf-8")
+            self._write_active_key(key)
 
     def _write_configs(self, configs: Iterable[LLMModelConfig]) -> None:
         payload = LLMModelRegistryFile(

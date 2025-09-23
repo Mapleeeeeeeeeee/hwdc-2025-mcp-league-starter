@@ -48,8 +48,15 @@ def _build_ollama_model(
     params: dict[str, Any] = {"id": config.model_id}
     if config.base_url:
         params["host"] = config.base_url
-    params.update(config.default_params)
-    params.update(overrides)
+
+    # Ollama uses options for model parameters like temperature
+    ollama_options = {}
+    ollama_options.update(config.default_params)
+    ollama_options.update(overrides)
+
+    if ollama_options:
+        params["options"] = ollama_options
+
     return Ollama(**params)
 
 

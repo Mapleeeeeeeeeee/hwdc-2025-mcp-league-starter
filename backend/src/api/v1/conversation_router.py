@@ -16,6 +16,7 @@ from src.models import (
     LLMModelDescriptor,
     UpsertLLMModelRequest,
 )
+from src.shared.exceptions.llm import LLMStreamError
 from src.shared.response import APIResponse, create_success_response
 from src.usecases.conversation import ConversationUsecase, ModelManagementUsecase
 from starlette.responses import StreamingResponse
@@ -69,9 +70,17 @@ async def stream_conversation_reply(
     usecase: ConversationUsecaseDep,
 ) -> Response:
     async def event_stream() -> AsyncIterator[str]:
-        async for chunk in usecase.stream_reply(payload):
-            data = json.dumps(chunk.model_dump(by_alias=True))
-            yield f"data: {data}\n\n"
+        try:
+            async for chunk in usecase.stream_reply(payload):
+                data = json.dumps(chunk.model_dump(by_alias=True))
+                yield f"data: {data}\n\n"
+        except LLMStreamError as exc:
+            error_payload = {
+                "type": exc.__class__.__name__,
+                "message": exc.detail,
+                "context": exc.context or None,
+            }
+            yield f"event: error\ndata: {json.dumps(error_payload)}\n\n"
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
 

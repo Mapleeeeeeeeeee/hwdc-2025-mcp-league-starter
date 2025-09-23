@@ -16,6 +16,7 @@ dependencies = [
 [tool.uv]
 dev-dependencies = [
     "pytest",
+    "pytest-asyncio>=0.23",
     "httpx",
     "ruff",
     "mypy",
