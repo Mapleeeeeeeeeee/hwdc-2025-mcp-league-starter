@@ -6,32 +6,33 @@ import json
 from collections.abc import Iterable
 from pathlib import Path
 from threading import Lock
-from typing import Any
+
+from pydantic import ValidationError
 
 from src.config import settings
 from src.core.exceptions import NotFoundError
 
 from .model_config import LLMModelConfig, LLMModelRegistryFile
 
-_DEFAULT_MODELS: list[dict[str, Any]] = [
-    {
-        "key": "openai:gpt-5-mini",
-        "provider": "openai",
-        "model_id": "gpt-5-mini",
-        "api_key_env": "OPENAI_API_KEY",
-        "supports_streaming": True,
-        "default_params": {"temperature": 0.7},
-        "metadata": {"display_name": "OpenAI GPT-5 mini"},
-    },
-    {
-        "key": "ollama:llama3.1",
-        "provider": "ollama",
-        "model_id": "llama3.1",
-        "supports_streaming": True,
-        "metadata": {"display_name": "Ollama Llama 3.1"},
-    },
-]
-_DEFAULT_ACTIVE_KEY: str = str(_DEFAULT_MODELS[0]["key"])
+_DEFAULT_MODEL_CONFIGS: tuple[LLMModelConfig, ...] = (
+    LLMModelConfig(
+        key="openai:gpt-5-mini",
+        provider="openai",
+        model_id="gpt-5-mini",
+        api_key_env="OPENAI_API_KEY",
+        supports_streaming=True,
+        default_params={"temperature": 0.7},
+        metadata={"display_name": "OpenAI GPT-5 mini"},
+    ),
+    LLMModelConfig(
+        key="ollama:llama3.1",
+        provider="ollama",
+        model_id="llama3.1",
+        supports_streaming=True,
+        metadata={"display_name": "Ollama Llama 3.1"},
+    ),
+)
+_DEFAULT_ACTIVE_KEY: str = _DEFAULT_MODEL_CONFIGS[0].key
 
 
 class ModelConfigStore:
@@ -48,11 +49,7 @@ class ModelConfigStore:
         self._ensure_files()
 
     def list_configs(self) -> list[LLMModelConfig]:
-        raw_models = self._read_models_file()
-        configs: list[LLMModelConfig] = []
-        for item in raw_models:
-            configs.append(LLMModelConfig(**item))
-        return configs
+        return [config.model_copy(deep=True) for config in self._read_models_file()]
 
     def get_config(self, key: str) -> LLMModelConfig:
         for config in self.list_configs():
@@ -97,15 +94,24 @@ class ModelConfigStore:
         existing[config.key] = config
         self._write_configs(existing.values())
 
-    def _read_models_file(self) -> list[dict[str, Any]]:
+    def _read_models_file(self) -> list[LLMModelConfig]:
         with self._lock:
             if not self._models_path.exists():
                 self._write_default_models()
-                return list(_DEFAULT_MODELS)
+                return [cfg.model_copy(deep=True) for cfg in _DEFAULT_MODEL_CONFIGS]
             raw = self._models_path.read_text(encoding="utf-8")
         if raw.strip() == "":
-            return list(_DEFAULT_MODELS)
-        data = json.loads(raw)
+            return [cfg.model_copy(deep=True) for cfg in _DEFAULT_MODEL_CONFIGS]
+        try:
+            registry = LLMModelRegistryFile.model_validate_json(raw)
+        except ValidationError:
+            try:
+                data = json.loads(raw)
+            except json.JSONDecodeError as exc:
+                msg = "Invalid model configuration file format"
+                raise ValueError(msg) from exc
+        else:
+            return [model.model_copy(deep=True) for model in registry.models]
         if isinstance(data, dict) and "models" in data:
             models = data["models"]
         elif isinstance(data, list):
@@ -115,7 +121,7 @@ class ModelConfigStore:
             raise ValueError(msg)
         if not isinstance(models, list):
             raise ValueError("Model configuration file must contain a list of models")
-        return [dict(item) for item in models]
+        return [LLMModelConfig(**dict(item)) for item in models]
 
     def _ensure_files(self) -> None:
         with self._lock:
@@ -127,7 +133,7 @@ class ModelConfigStore:
 
     def _write_default_models(self) -> None:
         registry = LLMModelRegistryFile(
-            models=[LLMModelConfig(**cfg) for cfg in _DEFAULT_MODELS]
+            models=[cfg.model_copy(deep=True) for cfg in _DEFAULT_MODEL_CONFIGS]
         )
         serialized = registry.model_dump_json(indent=2)
         self._models_path.write_text(serialized, encoding="utf-8")
@@ -139,7 +145,9 @@ class ModelConfigStore:
             self._active_path.write_text(payload, encoding="utf-8")
 
     def _write_configs(self, configs: Iterable[LLMModelConfig]) -> None:
-        payload = LLMModelRegistryFile(models=list(configs))
+        payload = LLMModelRegistryFile(
+            models=[cfg.model_copy(deep=True) for cfg in configs]
+        )
         with self._lock:
             self._models_path.parent.mkdir(parents=True, exist_ok=True)
             serialized = payload.model_dump_json(indent=2)
