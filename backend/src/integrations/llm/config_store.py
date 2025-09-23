@@ -71,7 +71,18 @@ class ModelConfigStore:
                 self._write_active_key(_DEFAULT_ACTIVE_KEY)
                 return _DEFAULT_ACTIVE_KEY
             raw = self._active_path.read_text(encoding="utf-8").strip()
-        return raw or _DEFAULT_ACTIVE_KEY
+        if not raw:
+            return _DEFAULT_ACTIVE_KEY
+        try:
+            data = json.loads(raw)
+            if isinstance(data, dict) and "active_model_key" in data:
+                value = data["active_model_key"]
+                if isinstance(value, str) and value:
+                    return value
+        except json.JSONDecodeError:
+            # backwards compatibility with legacy plain-text format
+            return raw
+        return _DEFAULT_ACTIVE_KEY
 
     def set_active_model_key(self, key: str) -> None:
         # 先驗證是否存在
@@ -124,7 +135,8 @@ class ModelConfigStore:
     def _write_active_key(self, key: str) -> None:
         with self._lock:
             self._active_path.parent.mkdir(parents=True, exist_ok=True)
-            self._active_path.write_text(key, encoding="utf-8")
+            payload = json.dumps({"active_model_key": key}, indent=2)
+            self._active_path.write_text(payload, encoding="utf-8")
 
     def _write_configs(self, configs: Iterable[LLMModelConfig]) -> None:
         payload = LLMModelRegistryFile(models=list(configs))

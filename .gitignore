@@ -113,3 +113,6 @@ htmlcov/
 # MCP specific
 mcp-plugins/
 plugins/cache/
+
+# Backend runtime configuration
+backend/config/
