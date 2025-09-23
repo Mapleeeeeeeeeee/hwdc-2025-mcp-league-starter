@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class LLMModelConfig(BaseModel):
@@ -34,9 +34,11 @@ class LLMModelConfig(BaseModel):
     supports_streaming: bool = Field(default=True)
     metadata: dict[str, Any] = Field(default_factory=dict)
 
-    model_config = {
-        "str_min_length": 1,
-    }
+    model_config = ConfigDict(
+        {
+            "str_min_length": 1,
+        }
+    )
 
     @field_validator("api_key_env")
     @classmethod

@@ -7,6 +7,7 @@ from collections.abc import AsyncIterator, Iterator
 from types import SimpleNamespace
 
 import pytest
+import pytest_asyncio
 from agno.agent import RunContentEvent, RunErrorEvent
 from httpx import ASGITransport, AsyncClient
 from src.api.v1 import conversation_router
@@ -108,7 +109,7 @@ def stub_factory() -> Iterator[StubAgentFactory]:
     conversation_router.get_agent_factory.cache_clear()
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def async_client(stub_factory: StubAgentFactory) -> AsyncIterator[AsyncClient]:
     transport = ASGITransport(app=app)
     await app.router.startup()

@@ -39,3 +39,11 @@ indent-style = "space"
 python_version = "3.12"
 ignore_missing_imports = true
 files = ["src/"]
+
+[tool.pytest.ini_options]
+markers = [
+    "unit: marks tests as unit tests",
+    "integration: marks tests as integration tests",
+    "api: marks tests related to the API layer",
+    "application: marks tests related to the application layer",
+]
