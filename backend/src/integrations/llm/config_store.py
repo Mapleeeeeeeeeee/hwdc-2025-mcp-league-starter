@@ -15,13 +15,13 @@ from .model_config import LLMModelConfig, LLMModelRegistryFile
 
 _DEFAULT_MODELS: list[dict[str, Any]] = [
     {
-        "key": "openai:gpt-4o-mini",
+        "key": "openai:gpt-5-mini",
         "provider": "openai",
-        "model_id": "gpt-4o-mini",
+        "model_id": "gpt-5-mini",
         "api_key_env": "OPENAI_API_KEY",
         "supports_streaming": True,
         "default_params": {"temperature": 0.7},
-        "metadata": {"display_name": "OpenAI GPT-4o mini"},
+        "metadata": {"display_name": "OpenAI GPT-5 mini"},
     },
     {
         "key": "ollama:llama3.1",

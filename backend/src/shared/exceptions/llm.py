@@ -29,7 +29,31 @@ class LLMProviderUnsupportedError(BadRequestError):
         )
 
 
+class LLMNoOutputError(ServiceUnavailableError):
+    """Raised when the LLM provider returns no content."""
+
+    def __init__(self, **kwargs):
+        super().__init__(
+            detail="LLM provider returned no content",
+            i18n_key="errors.llm.no_output",
+            **kwargs,
+        )
+
+
+class LLMStreamError(ServiceUnavailableError):
+    """Raised when an error occurs during an LLM stream."""
+
+    def __init__(self, **kwargs):
+        super().__init__(
+            detail="LLM stream ended unexpectedly",
+            i18n_key="errors.llm.stream_incomplete",
+            **kwargs,
+        )
+
+
 __all__ = [
     "LLMProviderNotConfiguredError",
     "LLMProviderUnsupportedError",
+    "LLMNoOutputError",
+    "LLMStreamError",
 ]

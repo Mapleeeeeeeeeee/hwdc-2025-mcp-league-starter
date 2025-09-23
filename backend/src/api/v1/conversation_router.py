@@ -8,7 +8,7 @@ from functools import lru_cache
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Response
-from src.integrations.llm import ConversationAgentFactory, LLMModelConfig
+from src.integrations.llm import ConversationAgentFactory
 from src.models.conversation import (
     ConversationReply,
     ConversationRequest,
@@ -17,7 +17,7 @@ from src.models.conversation import (
     UpsertLLMModelRequest,
 )
 from src.shared.response import APIResponse, create_success_response
-from src.usecases.conversation import ConversationUsecase
+from src.usecases.conversation import ConversationUsecase, ModelManagementUsecase
 from starlette.responses import StreamingResponse
 
 
@@ -40,6 +40,17 @@ def get_conversation_usecase(
 
 ConversationUsecaseDep = Annotated[
     ConversationUsecase, Depends(get_conversation_usecase)
+]
+
+
+def get_model_management_usecase(
+    agent_factory: AgentFactoryDep,
+) -> ModelManagementUsecase:
+    return ModelManagementUsecase(agent_factory)
+
+
+ModelManagementUsecaseDep = Annotated[
+    ModelManagementUsecase, Depends(get_model_management_usecase)
 ]
 
 
@@ -67,65 +78,27 @@ async def stream_conversation_reply(
 
 @router.get("/models", response_model=APIResponse[ListModelsResponse])
 async def list_models(
-    agent_factory: AgentFactoryDep,
+    usecase: ModelManagementUsecaseDep,
 ) -> APIResponse[ListModelsResponse]:
-    configs = agent_factory.get_available_models()
-    models = [
-        LLMModelDescriptor(
-            key=config.key,
-            provider=config.provider,
-            model_id=config.model_id,
-            supports_streaming=config.supports_streaming,
-            metadata=config.metadata,
-            base_url=config.base_url,
-        )
-        for config in configs
-    ]
-    payload = ListModelsResponse(
-        active_model_key=agent_factory.get_active_model_key(),
-        models=models,
-    )
+    payload = await usecase.list_models()
     return create_success_response(data=payload, message="Model list retrieved")
 
 
 @router.put("/models/{model_key}", status_code=204)
 async def update_active_model(
     model_key: str,
-    agent_factory: AgentFactoryDep,
+    usecase: ModelManagementUsecaseDep,
 ) -> Response:
-    agent_factory.set_active_model_key(model_key)
+    await usecase.set_active_model(model_key)
     return Response(status_code=204)
 
 
 @router.post("/models", response_model=APIResponse[LLMModelDescriptor], status_code=201)
 async def upsert_model(
     payload: UpsertLLMModelRequest,
-    agent_factory: AgentFactoryDep,
+    usecase: ModelManagementUsecaseDep,
 ) -> APIResponse[LLMModelDescriptor]:
-    config = LLMModelConfig(
-        key=payload.key,
-        provider=payload.provider,
-        model_id=payload.model_id,
-        api_key_env=payload.api_key_env,
-        base_url=payload.base_url,
-        default_params=dict(payload.default_params or {}),
-        supports_streaming=payload.supports_streaming,
-        metadata=dict(payload.metadata or {}),
-    )
-
-    agent_factory.register_model(config)
-    if payload.set_active:
-        agent_factory.set_active_model_key(config.key)
-
-    descriptor = LLMModelDescriptor(
-        key=config.key,
-        provider=config.provider,
-        model_id=config.model_id,
-        supports_streaming=config.supports_streaming,
-        metadata=config.metadata,
-        base_url=config.base_url,
-    )
-
+    descriptor = await usecase.upsert_model(payload)
     return create_success_response(
         data=descriptor,
         message="Model configuration updated",

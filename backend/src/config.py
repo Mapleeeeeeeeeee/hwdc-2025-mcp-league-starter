@@ -34,6 +34,7 @@ class Settings(BaseSettings):
         env_file = ".env"
         env_file_encoding = "utf-8"
         case_sensitive = False
+        extra = "ignore"
 
     @field_validator("llm_models_file", "llm_active_model_file", mode="before")
     @classmethod

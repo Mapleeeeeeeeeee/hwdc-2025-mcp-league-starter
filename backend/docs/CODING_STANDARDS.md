@@ -114,6 +114,29 @@ The semantics of `find_` are inconsistent across different frameworks and ORMs (
   - **DO**: `from src.utils.time import utc_now`
   - **DON'T**: `from utils.time import utc_now`
   - **AVOID**: `from .utils.time import utc_now` (relative imports) unless necessary to prevent circular dependencies.
+### 6.1. Package Exports
+
+To create a clean public API for packages, symbols (like classes or functions) should be imported into the package's `__init__.py` file and added to `__all__`.
+This practice hides the internal file structure from consumers and provides a single, stable entry point to the package's functionality.
+
+**DO**: In `src/some_package/__init__.py`:
+```python
+from .internal_module import MyClass
+from .another_module import another_func
+
+__all__ = ["MyClass", "another_func"]
+```
+Then, other parts of the application can consume it cleanly:
+```python
+from src.some_package import MyClass, another_func
+```
+
+**DON'T**: Do not force consumers to import from deep or internal module paths, as these are subject to change.
+```python
+# AVOID THIS:
+from src.some_package.internal_module import MyClass
+```
+
 - **Forbidden Practices**:
   - **No wildcard imports**: Never use `from module import *`. Always import specific names or use qualified imports.
   - **No confusing aliases**: Avoid aliases that conflict with standard library or well-known third-party names (e.g., don't use `import json as ujson`).

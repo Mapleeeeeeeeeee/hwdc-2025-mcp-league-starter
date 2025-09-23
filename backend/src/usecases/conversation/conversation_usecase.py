@@ -7,7 +7,7 @@ from uuid import uuid4
 
 from agno.agent import RunContentEvent, RunErrorEvent, RunOutput
 
-from src.core.exceptions import ServiceUnavailableError
+from src.shared.exceptions.llm import LLMNoOutputError, LLMStreamError
 
 from ...integrations.llm import ConversationAgentFactory
 from ...models.conversation import (
@@ -37,11 +37,7 @@ class ConversationUsecase:
 
         content = run_output.get_content_as_string() or run_output.content
         if content is None:
-            raise ServiceUnavailableError(
-                detail="LLM did not return output",
-                i18n_key="errors.llm.no_output",
-                context={"conversation_id": payload.conversation_id},
-            )
+            raise LLMNoOutputError(context={"conversation_id": payload.conversation_id})
 
         model_key = payload.model_key or self._agent_factory.get_active_model_key()
         model_identifier = (
@@ -94,8 +90,6 @@ class ConversationUsecase:
                 )
 
             if isinstance(event, RunErrorEvent):
-                raise ServiceUnavailableError(
-                    detail="LLM streaming output ended unexpectedly",
-                    i18n_key="errors.llm.stream_incomplete",
-                    context={"conversation_id": payload.conversation_id},
+                raise LLMStreamError(
+                    context={"conversation_id": payload.conversation_id}
                 )
