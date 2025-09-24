@@ -314,3 +314,8 @@ def get_mcp_server_functions(server_name: str) -> list[str]:
     if not manager.is_initialized():
         return []
     return list(manager.get_functions_for_server(server_name).keys())
+
+
+def get_mcp_toolkit(server_name: str) -> MCPToolkit | None:
+    """Get the toolkit for a specific MCP server."""
+    return MCPManager().get_toolkit_for_server(server_name)

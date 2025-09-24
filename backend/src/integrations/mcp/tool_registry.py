@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import importlib
 import pkgutil
-import platform
 from pathlib import Path
 from typing import Any, ClassVar
 
@@ -13,19 +12,10 @@ from agno.tools import Toolkit
 
 from src.config import settings
 from src.core.logging import get_logger
-from src.integrations.mcp import get_mcp_toolkit, mcp_settings
+from src.integrations.mcp import get_mcp_toolkit
+from src.integrations.mcp.settings import mcp_settings
 
 logger = get_logger(__name__)
-
-
-if platform.system() == "Windows" and mcp_settings.enable_mcp_system:
-    try:  # pragma: no cover - platform specific
-        import nest_asyncio
-
-        nest_asyncio.apply()
-        logger.debug("Applied nest_asyncio for Windows MCP support")
-    except ImportError:  # pragma: no cover - optional dependency
-        logger.warning("nest_asyncio not installed; MCP tools may misbehave on Windows")
 
 
 class ToolRegistry:
