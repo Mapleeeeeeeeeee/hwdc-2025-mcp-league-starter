@@ -85,10 +85,25 @@ class MCPParamsManager:
         if payload is None:
             return []
 
-        entries = payload.get("servers") if isinstance(payload, dict) else payload
-        if not isinstance(entries, list):
-            logger.error("MCP servers config must be a list or have a 'servers' list")
+        mcp_servers = None
+        if isinstance(payload, dict):
+            mcp_servers = payload.get("mcpServers")
+
+        if not isinstance(mcp_servers, dict):
+            logger.error("MCP servers config must contain a 'mcpServers' object")
             return []
+
+        entries: list[Any] = []
+        for key, value in mcp_servers.items():
+            if not isinstance(value, dict):
+                logger.warning(
+                    "Skipping invalid MCP server entry %s from mcpServers map",
+                    key,
+                )
+                continue
+            entry = {**value}
+            entry.setdefault("name", key)
+            entries.append(entry)
 
         configs: list[MCPServerParams] = []
         for raw in entries:
