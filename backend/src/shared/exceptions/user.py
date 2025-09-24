@@ -70,10 +70,3 @@ class UserAccessDeniedError(ForbiddenError):
             context={"user_id": user_id, "resource": resource},
             **kwargs,
         )
-
-
-__all__ = [
-    "UserNotFoundError",
-    "UserAlreadyExistsError",
-    "UserAccessDeniedError",
-]

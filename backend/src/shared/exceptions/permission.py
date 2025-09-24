@@ -49,9 +49,3 @@ class AuthenticationRequiredError(UnauthorizedError):
             context={"resource": resource} if resource else None,
             **kwargs,
         )
-
-
-__all__ = [
-    "PermissionDeniedError",
-    "AuthenticationRequiredError",
-]

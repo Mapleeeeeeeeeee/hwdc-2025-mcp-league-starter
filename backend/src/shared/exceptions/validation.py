@@ -42,9 +42,3 @@ class ValidationError(UnprocessableEntityError):
             context={"message": message, "validation_errors": validation_errors},
             **kwargs,
         )
-
-
-__all__ = [
-    "InvalidInputError",
-    "ValidationError",
-]
