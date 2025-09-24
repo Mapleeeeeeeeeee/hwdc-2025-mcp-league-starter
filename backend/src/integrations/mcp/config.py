@@ -19,8 +19,12 @@ class MCPSettings(BaseSettings):
     node_env: str = Field(default="development", alias="MCP_NODE_ENV")
     timeout_seconds: int = Field(default=60, alias="MCP_TIMEOUT_SECONDS")
     enabled_servers: list[str] | str = Field(
-        default_factory=lambda: ["filesystem"],
+        default_factory=list,
         alias="MCP_ENABLED_SERVERS",
+    )
+    servers_config_file: Path | None = Field(
+        default=Path("config/mcp_servers.json"),
+        alias="MCP_SERVERS_FILE",
     )
     brave_api_key: str | None = Field(default=None, alias="BRAVE_API_KEY")
     postgres_database_url: str | None = Field(
@@ -45,6 +49,18 @@ class MCPSettings(BaseSettings):
             path = path.resolve()
         return path
 
+    @field_validator("servers_config_file", mode="before")
+    @classmethod
+    def _normalise_config_path(cls, value: str | Path | None) -> Path | None:
+        if value is None:
+            return None
+        path = Path(value).expanduser()
+        if not path.is_absolute():
+            path = (Path.cwd() / path).resolve()
+        else:
+            path = path.resolve()
+        return path
+
     @field_validator("enabled_servers", mode="before")
     @classmethod
     def _parse_enabled_servers(cls, value: Any) -> list[str]:
@@ -60,7 +76,11 @@ class MCPSettings(BaseSettings):
 
     def is_server_enabled(self, name: str) -> bool:
         """Return True when the given server identifier is enabled."""
-        return self.enable_mcp_system and name.lower() in self.enabled_servers
+        if not self.enable_mcp_system:
+            return False
+        if not self.enabled_servers:
+            return True
+        return name.lower() in self.enabled_servers
 
 
 mcp_settings = MCPSettings()

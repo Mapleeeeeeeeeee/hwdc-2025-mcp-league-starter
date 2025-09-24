@@ -1,0 +1,10 @@
+[
+  {
+    "name": "filesystem",
+    "command": "npx -y @modelcontextprotocol/server-filesystem {BASE_PATH}",
+    "env": {},
+    "timeout_seconds": 60,
+    "enabled": true,
+    "description": "Filesystem browsing tools"
+  }
+]

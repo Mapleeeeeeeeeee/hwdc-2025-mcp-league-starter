@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import json
 import platform
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 from src.core.logging import get_logger
 
@@ -53,65 +55,12 @@ class MCPParamsManager:
             logger.info("MCP system disabled; skipping MCP server configuration")
             return configs
 
-        if self.settings.is_server_enabled("filesystem"):
-            configs.append(
-                MCPServerParams(
-                    name="filesystem",
-                    command=(
-                        "npx -y @modelcontextprotocol/server-filesystem "
-                        f"{self._format_base_path(self.settings.base_path)}"
-                    ),
-                    env={"NODE_ENV": self.settings.node_env},
-                    timeout_seconds=self.settings.timeout_seconds,
-                    description="Filesystem browsing tools",
-                )
-            )
+        configs.extend(self._load_configured_params())
 
-        if self.settings.is_server_enabled("context7"):
-            configs.append(
-                MCPServerParams(
-                    name="context7",
-                    command="npx -y @upstash/context7-mcp@latest",
-                    timeout_seconds=self.settings.timeout_seconds,
-                    description="Context7 documentation tools",
-                )
-            )
-
-        if self.settings.is_server_enabled("brave-search"):
-            api_key = self.settings.brave_api_key
-            if not api_key:
-                logger.warning(
-                    "Brave Search MCP enabled but BRAVE_API_KEY not configured"
-                )
-
-            configs.append(
-                MCPServerParams(
-                    name="brave-search",
-                    command="npx -y @modelcontextprotocol/server-brave-search",
-                    env={"BRAVE_API_KEY": api_key or ""},
-                    timeout_seconds=self.settings.timeout_seconds,
-                    description="Brave search integration",
-                )
-            )
-
-        if self.settings.is_server_enabled("postgres"):
-            database_url = self.settings.postgres_database_url
-            if not database_url:
-                logger.warning(
-                    "PostgreSQL MCP enabled but POSTGRES_DATABASE_URL not configured",
-                )
-
-            configs.append(
-                MCPServerParams(
-                    name="postgres",
-                    command=(
-                        "npx -y @modelcontextprotocol/server-postgres "
-                        f"{database_url or ''}"
-                    ),
-                    timeout_seconds=self.settings.timeout_seconds,
-                    description="PostgreSQL database tools",
-                )
-            )
+        deduped: dict[str, MCPServerParams] = {}
+        for item in configs:
+            deduped[item.name] = item
+        configs = list(deduped.values())
 
         for config in configs:
             if config.args:
@@ -126,7 +75,114 @@ class MCPParamsManager:
             self.settings.base_path,
         )
 
+        if not configs:
+            logger.warning("No MCP server configurations available")
+
         return configs
+
+    def _load_configured_params(self) -> list[MCPServerParams]:
+        payload = self._load_servers_payload()
+        if payload is None:
+            return []
+
+        entries = payload.get("servers") if isinstance(payload, dict) else payload
+        if not isinstance(entries, list):
+            logger.error("MCP servers config must be a list or have a 'servers' list")
+            return []
+
+        configs: list[MCPServerParams] = []
+        for raw in entries:
+            if not isinstance(raw, dict):
+                logger.warning("Skipping invalid MCP server entry: %s", raw)
+                continue
+
+            params = self._create_params_from_dict(raw)
+            if not params:
+                continue
+
+            configs.append(params)
+
+        if configs:
+            logger.info("Loaded %s MCP server(s) from JSON configuration", len(configs))
+
+        return configs
+
+    def _load_servers_payload(self) -> Any | None:
+        custom_path = self.settings.servers_config_file
+        if custom_path and custom_path.exists():
+            try:
+                with custom_path.open("r", encoding="utf-8") as fp:
+                    logger.info("Loading MCP servers from %s", custom_path)
+                    return json.load(fp)
+            except json.JSONDecodeError as exc:
+                logger.error("Invalid MCP servers JSON at %s: %s", custom_path, exc)
+                return None
+
+        default_path = Path(__file__).with_name("default_servers.json")
+        try:
+            with default_path.open("r", encoding="utf-8") as fp:
+                logger.info("Using bundled MCP server defaults: %s", default_path)
+                return json.load(fp)
+        except FileNotFoundError:
+            logger.error("Bundled MCP server defaults missing at %s", default_path)
+            return None
+
+    def _create_params_from_dict(self, data: dict[str, Any]) -> MCPServerParams | None:
+        name = str(data.get("name", "")).strip()
+        if not name:
+            logger.warning("MCP server entry missing 'name'")
+            return None
+
+        command = data.get("command")
+        if not isinstance(command, str) or not command.strip():
+            logger.warning("MCP server '%s' missing command", name)
+            return None
+
+        command = command.replace(
+            "{BASE_PATH}",
+            self._format_base_path(self.settings.base_path),
+        )
+
+        enabled_flag = data.get("enabled", True)
+        enabled = bool(enabled_flag) and self.settings.is_server_enabled(name)
+
+        timeout = data.get("timeout_seconds", self.settings.timeout_seconds)
+        try:
+            timeout_seconds = int(timeout)
+        except (TypeError, ValueError):
+            logger.warning(
+                "Invalid timeout for MCP server '%s'; using default %s",
+                name,
+                self.settings.timeout_seconds,
+            )
+            timeout_seconds = self.settings.timeout_seconds
+
+        env_config = data.get("env") or {}
+        if not isinstance(env_config, dict):
+            logger.warning("Invalid env mapping for MCP server '%s'", name)
+            env_config = {}
+        env: dict[str, str] = {str(k): str(v) for k, v in env_config.items()}
+
+        args = data.get("args") or None
+        if isinstance(args, list):
+            args = [str(arg) for arg in args]
+        elif args is not None:
+            logger.warning("Ignoring non-list args for MCP server '%s'", name)
+            args = None
+
+        description = str(data.get("description", "")).strip()
+
+        params = MCPServerParams(
+            name=name,
+            command=command,
+            args=args,
+            env=env,
+            timeout_seconds=timeout_seconds,
+            enabled=enabled,
+            description=description,
+        )
+
+        return params
 
     def validate_config(self, config: MCPServerParams) -> bool:
         if not config.name:
