@@ -12,7 +12,9 @@ from typing import Any
 from agno.tools.mcp import MCPTools
 
 from src.core.logging import get_logger
-from src.integrations.mcp import MCPParamsManager, MCPServerParams, MCPToolkit
+
+from .server_params import MCPParamsManager, MCPServerParams
+from .toolkit import MCPToolkit
 
 logger = get_logger(__name__)
 
@@ -261,32 +263,44 @@ class MCPManager:
             "available_servers": self.get_available_servers(),
         }
 
-    def graceful_cleanup(self) -> None:
-        logger.info("Commencing MCP manager cleanup")
+    async def shutdown(self) -> None:
+        """Close all active MCP tool connections and reset state."""
+        logger.info("Commencing MCP manager shutdown")
 
         if not self._initialized or not self._servers:
-            logger.debug("MCP manager not initialised; nothing to clean up")
+            logger.debug("MCP manager not initialised; nothing to shut down")
             return
 
-        for server_name, tools in list(self._servers.items()):
-            try:
-                logger.info("Cleaning MCP server '%s'", server_name)
-                process = getattr(tools, "_process", None)
-                if process is not None:
-                    process.terminate()
-                    if process.poll() is None:
-                        logger.debug("Force terminating MCP server '%s'", server_name)
-                        process.kill()
-            except Exception as exc:  # pragma: no cover - defensive logging
-                logger.warning(
-                    "Error while cleaning MCP server '%s': %s",
-                    server_name,
-                    exc,
-                )
+        async with self._lock:
+            shutdown_errors: list[str] = []
 
-        self._servers.clear()
-        self._initialized = False
-        logger.info("MCP manager cleanup complete")
+            for server_name, tools in list(self._servers.items()):
+                try:
+                    logger.info("Closing MCP server '%s'", server_name)
+                    if hasattr(tools, "__aexit__"):
+                        await tools.__aexit__(None, None, None)
+                    elif hasattr(tools, "close") and callable(tools.close):
+                        result = tools.close()
+                        if asyncio.iscoroutine(result):
+                            await result
+                    else:  # pragma: no cover - safety fallback
+                        logger.debug(
+                            "MCP server '%s' exposes no async close handler",
+                            server_name,
+                        )
+                except Exception as exc:  # pragma: no cover - defensive logging
+                    message = f"Error while cleaning MCP server '{server_name}': {exc}"
+                    logger.warning(message)
+                    shutdown_errors.append(message)
+
+            self._servers.clear()
+            self._configs = []
+            self._initialized = False
+
+            if shutdown_errors:
+                logger.debug("MCP shutdown issues: %s", shutdown_errors)
+
+        logger.info("MCP manager shutdown complete")
 
 
 async def initialize_mcp_system() -> bool:
@@ -297,8 +311,8 @@ def get_mcp_status() -> dict[str, Any]:
     return MCPManager().get_system_status()
 
 
-def graceful_mcp_cleanup() -> None:
-    MCPManager().graceful_cleanup()
+async def graceful_mcp_cleanup() -> None:
+    await MCPManager().shutdown()
 
 
 def is_mcp_initialized() -> bool:

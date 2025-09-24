@@ -8,7 +8,8 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from src.core.logging import get_logger
-from src.integrations.mcp import MCPSettings, mcp_settings
+
+from .config import MCPSettings, mcp_settings
 
 logger = get_logger(__name__)
 

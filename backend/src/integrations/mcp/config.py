@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 from pathlib import Path
+from typing import Any
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -17,7 +18,7 @@ class MCPSettings(BaseSettings):
     base_path: Path = Field(default=Path("."), alias="MCP_BASE_PATH")
     node_env: str = Field(default="development", alias="MCP_NODE_ENV")
     timeout_seconds: int = Field(default=60, alias="MCP_TIMEOUT_SECONDS")
-    enabled_servers: list[str] = Field(
+    enabled_servers: list[str] | str = Field(
         default_factory=lambda: ["filesystem"],
         alias="MCP_ENABLED_SERVERS",
     )
@@ -46,12 +47,16 @@ class MCPSettings(BaseSettings):
 
     @field_validator("enabled_servers", mode="before")
     @classmethod
-    def _parse_enabled_servers(cls, value: str | Iterable[str]) -> list[str]:
+    def _parse_enabled_servers(cls, value: Any) -> list[str]:
+        if value is None:
+            return []
         if isinstance(value, str):
             items = [item.strip() for item in value.split(",") if item.strip()]
-        else:
-            items = [item.strip() for item in value if item and item.strip()]
-        return [item.lower() for item in items]
+            return [item.lower() for item in items]
+        if isinstance(value, Iterable):
+            items = [str(item).strip() for item in value if str(item).strip()]
+            return [item.lower() for item in items]
+        raise TypeError("enabled_servers must be a string or iterable of strings")
 
     def is_server_enabled(self, name: str) -> bool:
         """Return True when the given server identifier is enabled."""

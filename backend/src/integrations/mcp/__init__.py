@@ -1,5 +1,6 @@
 """Public API surface for the MCP integration package."""
 
+from .config import MCPSettings, mcp_settings
 from .manager import (
     MCPManager,
     get_available_mcp_servers,
@@ -15,7 +16,6 @@ from .server_params import (
     MCPServerParams,
     default_params_manager,
 )
-from .settings import MCPSettings, mcp_settings
 from .tool_registry import ToolRegistry, tool_registry
 from .toolkit import MCPToolkit
 

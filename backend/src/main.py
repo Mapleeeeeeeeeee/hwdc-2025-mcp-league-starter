@@ -1,4 +1,5 @@
 import tomllib
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
@@ -6,6 +7,7 @@ from src.api.exception_handlers import register_exception_handlers
 from src.api.v1.conversation_router import router as conversation_router
 from src.config import settings
 from src.core import TraceMiddleware, setup_logging
+from src.integrations.mcp import graceful_mcp_cleanup, initialize_mcp_system
 from src.shared.response import create_success_response
 
 
@@ -16,12 +18,25 @@ def get_version() -> str:
     return pyproject["project"]["version"]
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Handle application startup and shutdown events."""
+    # Initialize MCP system on startup
+    await initialize_mcp_system()
+
+    try:
+        yield
+    finally:
+        await graceful_mcp_cleanup()
+
+
 setup_logging()
 
 app = FastAPI(
     title="HWDC 2025 Backend",
     version=get_version(),
     description="FastAPI backend for HWDC 2025 MCP League Starter",
+    lifespan=lifespan,
 )
 
 # Add trace middleware for request tracking and performance monitoring

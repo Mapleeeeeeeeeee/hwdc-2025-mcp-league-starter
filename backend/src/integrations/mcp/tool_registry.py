@@ -12,8 +12,9 @@ from agno.tools import Toolkit
 
 from src.config import settings
 from src.core.logging import get_logger
-from src.integrations.mcp import get_mcp_toolkit
-from src.integrations.mcp.settings import mcp_settings
+
+from .config import mcp_settings
+from .manager import get_mcp_toolkit
 
 logger = get_logger(__name__)
 
@@ -188,6 +189,3 @@ class ToolRegistry:
 
 
 tool_registry = ToolRegistry()
-
-
-__all__ = ["ToolRegistry", "tool_registry"]
