@@ -144,7 +144,7 @@ class MCPParamsManager:
         )
 
         enabled_flag = data.get("enabled", True)
-        enabled = bool(enabled_flag) and self.settings.is_server_enabled(name)
+        enabled = bool(enabled_flag)
 
         timeout = data.get("timeout_seconds", self.settings.timeout_seconds)
         try:
@@ -208,8 +208,6 @@ class MCPParamsManager:
             "mcp_system_enabled": self.settings.enable_mcp_system,
             "nodejs": False,
             "npx": False,
-            "brave_api_key": bool(self.settings.brave_api_key),
-            "postgres_database_url": bool(self.settings.postgres_database_url),
         }
 
         if not self.settings.enable_mcp_system:

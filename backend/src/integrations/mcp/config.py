@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable
 from pathlib import Path
-from typing import Any
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -18,17 +16,9 @@ class MCPSettings(BaseSettings):
     base_path: Path = Field(default=Path("."), alias="MCP_BASE_PATH")
     node_env: str = Field(default="development", alias="MCP_NODE_ENV")
     timeout_seconds: int = Field(default=60, alias="MCP_TIMEOUT_SECONDS")
-    enabled_servers: list[str] | str = Field(
-        default_factory=list,
-        alias="MCP_ENABLED_SERVERS",
-    )
     servers_config_file: Path | None = Field(
         default=Path("config/mcp_servers.json"),
         alias="MCP_SERVERS_FILE",
-    )
-    brave_api_key: str | None = Field(default=None, alias="BRAVE_API_KEY")
-    postgres_database_url: str | None = Field(
-        default=None, alias="POSTGRES_DATABASE_URL"
     )
 
     model_config = SettingsConfigDict(
@@ -61,26 +51,9 @@ class MCPSettings(BaseSettings):
             path = path.resolve()
         return path
 
-    @field_validator("enabled_servers", mode="before")
-    @classmethod
-    def _parse_enabled_servers(cls, value: Any) -> list[str]:
-        if value is None:
-            return []
-        if isinstance(value, str):
-            items = [item.strip() for item in value.split(",") if item.strip()]
-            return [item.lower() for item in items]
-        if isinstance(value, Iterable):
-            items = [str(item).strip() for item in value if str(item).strip()]
-            return [item.lower() for item in items]
-        raise TypeError("enabled_servers must be a string or iterable of strings")
-
-    def is_server_enabled(self, name: str) -> bool:
-        """Return True when the given server identifier is enabled."""
-        if not self.enable_mcp_system:
-            return False
-        if not self.enabled_servers:
-            return True
-        return name.lower() in self.enabled_servers
+    def is_mcp_enabled_globally(self) -> bool:
+        """Return True when the MCP system is enabled."""
+        return self.enable_mcp_system
 
 
 mcp_settings = MCPSettings()
