@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from types import SimpleNamespace
 from typing import cast
 
@@ -37,11 +38,11 @@ class StubAgent:
         self,
         *,
         run_output: StubRunOutput | None = None,
-        stream_events: list[object] | None = None,
+        stream_events: Sequence[object] | None = None,
         model_id: str = "openai:gpt-5-mini",
     ) -> None:
         self._run_output = run_output
-        self._stream_events = stream_events or []
+        self._stream_events = list(stream_events or [])
         self.model = SimpleNamespace(id=model_id)
         self.calls: list[dict[str, object]] = []
 
@@ -159,16 +160,11 @@ async def test_generate_reply__missing_content__raises_llm_no_output_error(
 
 
 def _make_content_event(content: str, *, run_id: str | None = None) -> RunContentEvent:
-    event = RunContentEvent.__new__(RunContentEvent)
-    event.content = content
-    event.run_id = run_id
-    return event
+    return RunContentEvent(content=content, run_id=run_id)
 
 
 def _make_error_event(error_message: str) -> RunErrorEvent:
-    event = RunErrorEvent.__new__(RunErrorEvent)
-    event.error = RuntimeError(error_message)
-    return event
+    return RunErrorEvent(content=error_message)
 
 
 @pytest.mark.asyncio

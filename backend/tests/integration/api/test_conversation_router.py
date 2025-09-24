@@ -122,17 +122,12 @@ async def async_client(stub_factory: StubAgentFactory) -> AsyncIterator[AsyncCli
         await app.router.shutdown()
 
 
-def _make_content_event(content: str, run_id: str | None = None):
-    event = RunContentEvent.__new__(RunContentEvent)
-    event.content = content
-    event.run_id = run_id
-    return event
+def _make_content_event(content: str, run_id: str | None = None) -> RunContentEvent:
+    return RunContentEvent(content=content, run_id=run_id)
 
 
-def _make_error_event(error_message: str):
-    event = RunErrorEvent.__new__(RunErrorEvent)
-    event.error = RuntimeError(error_message)
-    return event
+def _make_error_event(error_message: str) -> RunErrorEvent:
+    return RunErrorEvent(content=error_message)
 
 
 @pytest.mark.asyncio

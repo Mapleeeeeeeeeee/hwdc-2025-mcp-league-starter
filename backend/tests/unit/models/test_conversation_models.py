@@ -25,7 +25,7 @@ def test_conversation_request__empty_history__raises_validation_error() -> None:
 
 def test_conversation_message__invalid_role__raises_validation_error() -> None:
     with pytest.raises(ValidationError):
-        ConversationMessage(role="moderator", content="Hello")
+        ConversationMessage(role="moderator", content="Hello")  # type: ignore[arg-type]
 
 
 def test_conversation_reply__model_dump_uses_camel_case() -> None:
