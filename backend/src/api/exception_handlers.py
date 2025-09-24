@@ -5,7 +5,7 @@ This module provides centralized error handling following FastAPI best practices
 All exceptions are transformed into consistent JSON responses with trace IDs.
 """
 
-import logging
+from logging import getLogger
 
 from fastapi import HTTPException, Request, status
 from fastapi.exceptions import RequestValidationError
@@ -14,7 +14,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from src.core.exceptions import BaseAppException
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 
 async def base_app_exception_handler(
