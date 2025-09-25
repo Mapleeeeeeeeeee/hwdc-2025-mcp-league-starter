@@ -14,10 +14,11 @@ dependencies = [
     "mcp>=1.14.1",
 ]
 
-[tool.uv]
-dev-dependencies = [
+[dependency-groups]
+dev = [
     "pytest",
     "pytest-asyncio>=0.23",
+    "pytest-cov",
     "httpx",
     "ruff",
     "mypy",
