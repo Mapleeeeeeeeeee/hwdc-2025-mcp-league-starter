@@ -16,7 +16,6 @@ from .server_params import (
     MCPServerParams,
     default_params_manager,
 )
-from .tool_registry import ToolRegistry, tool_registry
 from .toolkit import MCPToolkit
 
 __all__ = [
@@ -33,7 +32,5 @@ __all__ = [
     "is_mcp_initialized",
     "get_available_mcp_servers",
     "get_mcp_server_functions",
-    "ToolRegistry",
-    "tool_registry",
     "get_mcp_toolkit",
 ]

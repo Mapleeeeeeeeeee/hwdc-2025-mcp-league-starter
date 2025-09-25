@@ -7,6 +7,9 @@ from uuid import uuid4
 
 from agno.agent import RunContentEvent, RunErrorEvent, RunOutput
 
+from src.core import get_logger
+from src.integrations.mcp import get_mcp_toolkit
+from src.models import MCPToolSelection
 from src.shared.exceptions.llm import LLMNoOutputError, LLMStreamError
 
 from ...integrations.llm import ConversationAgentFactory
@@ -22,12 +25,14 @@ class ConversationUsecase:
 
     def __init__(self, agent_factory: ConversationAgentFactory) -> None:
         self._agent_factory = agent_factory
+        self._logger = get_logger(self.__class__.__name__)
 
     async def generate_reply(self, payload: ConversationRequest) -> ConversationReply:
         agent = self._agent_factory.create_agent(
             model_key=payload.model_key,
             session_id=payload.conversation_id,
         )
+        self._attach_requested_tools(agent, payload.tools)
         messages = [message.model_dump(mode="python") for message in payload.history]
         run_output: RunOutput = await agent.arun(
             input=messages,
@@ -63,6 +68,7 @@ class ConversationUsecase:
             model_key=payload.model_key,
             session_id=payload.conversation_id,
         )
+        self._attach_requested_tools(agent, payload.tools)
         messages = [message.model_dump(mode="python") for message in payload.history]
         stream = agent.arun(
             input=messages,
@@ -93,3 +99,38 @@ class ConversationUsecase:
                 raise LLMStreamError(
                     context={"conversation_id": payload.conversation_id}
                 )
+
+    def _attach_requested_tools(
+        self,
+        agent,
+        selections: list[MCPToolSelection] | None,
+    ) -> None:
+        if not selections:
+            return
+
+        seen: set[str] = set()
+        for selection in selections:
+            server_name = selection.server.strip()
+            if not server_name or server_name in seen:
+                continue
+
+            seen.add(server_name)
+            functions = None
+            if selection.functions:
+                cleaned = [str(name).strip() for name in selection.functions]
+                functions = [name for name in cleaned if name]
+                if not functions:
+                    functions = None
+
+            toolkit = get_mcp_toolkit(
+                server_name,
+                allowed_functions=functions,
+            )
+            if toolkit is None or not toolkit.functions:
+                self._logger.debug(
+                    "Skipping MCP server '%s' – toolkit unavailable or empty",
+                    server_name,
+                )
+                continue
+
+            agent.add_tool(toolkit)

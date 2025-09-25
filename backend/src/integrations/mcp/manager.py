@@ -222,13 +222,15 @@ class MCPManager:
 
     def get_server_status(self) -> dict[str, dict[str, Any]]:
         status: dict[str, dict[str, Any]] = {}
-        for server_name, _tools in self._servers.items():
+        names = {config.name for config in self._configs} | set(self._servers.keys())
+        for server_name in sorted(names):
             functions = self.get_functions_for_server(server_name)
             status[server_name] = {
-                "connected": True,
+                "connected": server_name in self._servers,
                 "function_count": len(functions),
                 "functions": list(functions.keys()),
                 "description": self._get_server_description(server_name),
+                "enabled": self._is_server_enabled(server_name),
             }
         return status
 
@@ -237,6 +239,12 @@ class MCPManager:
             if config.name == server_name:
                 return config.description
         return ""
+
+    def _is_server_enabled(self, server_name: str) -> bool:
+        for config in self._configs:
+            if config.name == server_name:
+                return config.enabled
+        return False
 
     def get_available_servers(self) -> list[str]:
         return list(self._servers.keys())
