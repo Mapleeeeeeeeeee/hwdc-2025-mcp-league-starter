@@ -38,6 +38,7 @@ class StubAgent:
         self.stream_events: list[object] = []
         self.model = SimpleNamespace(id="openai:gpt-5-mini")
         self.calls: list[dict[str, object]] = []
+        self.added_tools: list[object] = []
 
     def arun(self, *, stream: bool = False, **kwargs):
         self.calls.append({"stream": stream, **kwargs})
@@ -54,6 +55,9 @@ class StubAgent:
             return self.run_output
 
         return runner()
+
+    def add_tool(self, tool: object) -> None:
+        self.added_tools.append(tool)
 
 
 class StubAgentFactory:
@@ -159,6 +163,50 @@ async def test_generate_conversation_reply__returns_success_payload(
     assert payload["data"]["content"] == "Hello from agent"
     assert "X-Trace-ID" in response.headers
     assert "X-Process-Time" in response.headers
+
+
+@pytest.mark.asyncio
+async def test_generate_conversation_reply__with_mcp_tools__registers_toolkit(
+    stub_factory: StubAgentFactory,
+    async_client: AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, object] = {}
+
+    def _fake_get_mcp_toolkit(server_name: str, *, allowed_functions=None):
+        captured["server"] = server_name
+        captured["functions"] = allowed_functions
+        toolkit = SimpleNamespace(functions={"search_files": object()})
+        return toolkit
+
+    monkeypatch.setattr(
+        "src.usecases.conversation.conversation_usecase.get_mcp_toolkit",
+        _fake_get_mcp_toolkit,
+    )
+
+    response = await async_client.post(
+        "/api/v1/conversation",
+        json={
+            "conversationId": "conv-tools",
+            "history": [
+                {"role": "user", "content": "List files"},
+            ],
+            "tools": [
+                {
+                    "server": "filesystem",
+                    "functions": ["search_files", "  "],
+                }
+            ],
+        },
+    )
+
+    assert response.status_code == 200
+    assert stub_factory.agent.added_tools, "應該註冊至少一個 MCP 工具"
+    assert captured["server"] == "filesystem"
+    assert captured["functions"] == ["search_files"]
+    added_tool = stub_factory.agent.added_tools[0]
+    assert hasattr(added_tool, "functions")
+    assert "search_files" in added_tool.functions
 
 
 @pytest.mark.asyncio

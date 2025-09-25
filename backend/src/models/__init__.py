@@ -10,6 +10,11 @@ from .conversation import (
     LLMModelDescriptor,
     UpsertLLMModelRequest,
 )
+from .mcp import (
+    ListMCPServersResponse,
+    MCPServerInfo,
+    MCPToolSelection,
+)
 
 __all__ = [
     "APIBaseModel",
@@ -20,4 +25,7 @@ __all__ = [
     "LLMModelDescriptor",
     "ListModelsResponse",
     "UpsertLLMModelRequest",
+    "MCPToolSelection",
+    "MCPServerInfo",
+    "ListMCPServersResponse",
 ]

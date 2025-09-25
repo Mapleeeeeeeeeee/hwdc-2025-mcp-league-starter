@@ -7,6 +7,7 @@ from typing import Any, Literal
 from pydantic import Field, field_validator
 
 from .base import APIBaseModel
+from .mcp import MCPToolSelection
 
 RoleLiteral = Literal["user", "assistant", "system"]
 
@@ -30,6 +31,10 @@ class ConversationRequest(APIBaseModel):
     model_key: str | None = Field(
         default=None,
         description="Requested model key, overrides default",
+    )
+    tools: list[MCPToolSelection] | None = Field(
+        default=None,
+        description="Optional list of MCP tool selections to register",
     )
 
     @field_validator("history")
