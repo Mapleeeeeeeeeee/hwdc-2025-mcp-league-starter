@@ -97,7 +97,23 @@ class ToolRegistry:
             logger.debug("MCP system disabled; skipping server '%s'", server_name)
             return None
 
-        toolkit = get_mcp_toolkit(server_name)
+        allowed_funcs = config.get("functions") or config.get("allowed_functions")
+        if allowed_funcs is not None:
+            if isinstance(allowed_funcs, list):
+                allowed_funcs = [
+                    str(name).strip() for name in allowed_funcs if str(name).strip()
+                ]
+            else:
+                logger.warning(
+                    "MCP configuration for '%s' has invalid functions list; ignoring",
+                    server_name,
+                )
+                allowed_funcs = None
+
+        toolkit = get_mcp_toolkit(
+            server_name,
+            allowed_functions=allowed_funcs,
+        )
         if toolkit is None:
             logger.warning("MCP server '%s' not available", server_name)
             return None

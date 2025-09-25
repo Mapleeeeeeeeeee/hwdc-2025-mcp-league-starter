@@ -197,7 +197,9 @@ class MCPManager:
                 info["function_count"],
             )
 
-    def get_toolkit_for_server(self, server_name: str) -> MCPToolkit | None:
+    def get_toolkit_for_server(
+        self, server_name: str, *, allowed_functions: list[str] | None = None
+    ) -> MCPToolkit | None:
         if not self._initialized:
             logger.debug("MCP manager not initialised; cannot provide toolkit")
             return None
@@ -207,7 +209,7 @@ class MCPManager:
             logger.debug("MCP server '%s' not found", server_name)
             return None
 
-        return MCPToolkit(server_name, tools)
+        return MCPToolkit(server_name, tools, allowed_functions=allowed_functions)
 
     def get_functions_for_server(self, server_name: str) -> dict[str, Any]:
         tools = self._servers.get(server_name)
@@ -330,6 +332,10 @@ def get_mcp_server_functions(server_name: str) -> list[str]:
     return list(manager.get_functions_for_server(server_name).keys())
 
 
-def get_mcp_toolkit(server_name: str) -> MCPToolkit | None:
+def get_mcp_toolkit(
+    server_name: str, *, allowed_functions: list[str] | None = None
+) -> MCPToolkit | None:
     """Get the toolkit for a specific MCP server."""
-    return MCPManager().get_toolkit_for_server(server_name)
+    return MCPManager().get_toolkit_for_server(
+        server_name, allowed_functions=allowed_functions
+    )

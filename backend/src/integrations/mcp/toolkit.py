@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Collection
 from typing import Any
 
 from agno.tools import Toolkit
@@ -15,10 +16,19 @@ logger = get_logger(__name__)
 class MCPToolkit(Toolkit):
     """Expose MCP functions registered on a remote server."""
 
-    def __init__(self, server_name: str, mcp_tools: MCPTools) -> None:
+    def __init__(
+        self,
+        server_name: str,
+        mcp_tools: MCPTools,
+        *,
+        allowed_functions: Collection[str] | None = None,
+    ) -> None:
         super().__init__(name=f"mcp_{server_name}", add_instructions=True)
         self.server_name = server_name
         self._mcp_tools = mcp_tools
+        self._allowed = (
+            {name.strip() for name in allowed_functions} if allowed_functions else None
+        )
         self._load_functions()
 
     def _load_functions(self) -> None:
@@ -32,6 +42,9 @@ class MCPToolkit(Toolkit):
                 return
 
             for func_name, func in functions.items():
+                if self._allowed is not None and func_name not in self._allowed:
+                    continue
+
                 self.functions[func_name] = func
                 logger.debug(
                     "Registered MCP function %s.%s",
