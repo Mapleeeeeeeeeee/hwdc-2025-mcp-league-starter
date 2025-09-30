@@ -6,8 +6,21 @@ import { ServerOverview } from "@/components/mcp/ServerOverview";
 import { listServers } from "@/features/mcp";
 import type { McpServersSnapshot } from "@/features/mcp";
 
-export default async function LandingPage() {
-  const tCommon = await getTranslations("common");
+type LocaleLandingPageProps = {
+  params: Promise<{
+    locale: string;
+  }>;
+};
+
+export default async function LocaleLandingPage({
+  params,
+}: LocaleLandingPageProps) {
+  const { locale } = await params;
+
+  const tCommon = await getTranslations({
+    locale,
+    namespace: "common",
+  });
 
   let initialSnapshot: McpServersSnapshot | undefined;
 

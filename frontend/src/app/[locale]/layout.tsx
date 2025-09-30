@@ -3,6 +3,7 @@ import { getMessages, setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
 
 import { AppProviders } from "@/app/providers";
+import { AppShell } from "@/components/layout/AppShell";
 import type { AppLocale } from "@/lib/i18n/config";
 import { LOCALES } from "@/lib/i18n/config";
 
@@ -35,13 +36,17 @@ export default async function LocaleLayout({
     notFound();
   }
 
+  if (process.env.NODE_ENV !== "production") {
+    console.log("[LocaleLayout] locale resolved", nextLocale);
+  }
+
   setRequestLocale(nextLocale);
 
   const messages = await getMessages();
 
   return (
     <AppProviders locale={nextLocale} messages={messages}>
-      {children}
+      <AppShell>{children}</AppShell>
     </AppProviders>
   );
 }

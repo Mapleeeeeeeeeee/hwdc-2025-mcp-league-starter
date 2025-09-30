@@ -2,7 +2,7 @@ import { getRequestConfig } from "next-intl/server";
 import { notFound } from "next/navigation";
 
 import type { AppLocale } from "@/lib/i18n/config";
-import { LOCALES } from "@/lib/i18n/config";
+import { LOCALES, DEFAULT_LOCALE } from "@/lib/i18n/config";
 
 type Messages = Record<string, unknown>;
 
@@ -11,16 +11,19 @@ function isSupportedLocale(locale: string): locale is AppLocale {
 }
 
 export default getRequestConfig(async ({ locale }) => {
-  if (!locale || !isSupportedLocale(locale)) {
-    notFound();
+  if (process.env.NODE_ENV !== "production") {
+    console.log("[i18n/request] requested locale", locale);
   }
 
+  const resolvedLocale =
+    locale && isSupportedLocale(locale) ? locale : DEFAULT_LOCALE;
+
   const messagesModule: { default: Messages } = await import(
-    `@/messages/${locale}/index`
+    `@/messages/${resolvedLocale}/index`
   );
 
   return {
-    locale,
+    locale: resolvedLocale,
     messages: messagesModule.default,
   };
 });
