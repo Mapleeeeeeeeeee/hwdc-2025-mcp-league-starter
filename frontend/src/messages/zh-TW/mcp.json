@@ -5,6 +5,7 @@
     "refreshing": "重新整理中…",
     "initializing": "正在初始化 MCP 系統…",
     "initialized": "共 {count} 台伺服器",
+    "traceLabel": "追蹤碼",
     "status": {
       "connected": "已連線",
       "disconnected": "未連線"

@@ -5,7 +5,9 @@
   "landing": {
     "title": "與工具協作的對話助理",
     "subtitle": "啟用 MCP 伺服器後即刻體驗工具增強的 AI 流程。",
-    "cta": "開始互動"
+    "cta": "開始互動",
+    "badge": "MCP 就緒",
+    "protocol": "模型上下文協定"
   },
   "chat": {
     "title": "智慧對話",
@@ -16,14 +18,33 @@
     "userLabel": "我",
     "status": {
       "pending": "處理中",
-      "generating": "助理正在思考..."
+      "generating": "助理正在思考...",
+      "streaming": "串流回覆中"
     },
     "error": {
       "generic": "送出訊息失敗，請稍後再試。"
+    },
+    "model": {
+      "label": "模型",
+      "loading": "載入模型中...",
+      "empty": "尚未設定模型"
+    },
+    "streaming": {
+      "label": "串流回覆",
+      "on": "開啟",
+      "off": "關閉",
+      "unsupported": "不支援"
     }
   },
   "settings": {
     "title": "設定",
     "mcpSection": "MCP 伺服器"
+  },
+  "localeSwitcher": {
+    "label": "語言",
+    "options": {
+      "zh-TW": "繁體中文",
+      "en": "English"
+    }
   }
 }

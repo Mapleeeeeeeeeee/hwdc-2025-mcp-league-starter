@@ -5,6 +5,7 @@
     "refreshing": "Refreshing…",
     "initializing": "Initialising MCP system…",
     "initialized": "{count} server(s)",
+    "traceLabel": "Trace ID",
     "status": {
       "connected": "Connected",
       "disconnected": "Disconnected"
