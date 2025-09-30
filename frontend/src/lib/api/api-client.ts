@@ -1,8 +1,6 @@
 import { ApiError } from "./api-error";
 import type { ApiResponse } from "./types";
-
-const DEFAULT_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+import { config } from "../config";
 
 type RequestOptions = RequestInit & {
   baseUrl?: string;
@@ -13,7 +11,7 @@ function buildUrl(path: string, baseUrl: string) {
   try {
     return new URL(path, baseUrl).toString();
   } catch (error) {
-    if (process.env.NODE_ENV !== "production") {
+    if (config.isDevelopment) {
       console.error("Failed to build API URL", { path, baseUrl, error });
     }
     throw error;
@@ -22,7 +20,7 @@ function buildUrl(path: string, baseUrl: string) {
 
 export async function apiRequest<T>(
   path: string,
-  { baseUrl = DEFAULT_BASE_URL, parseJson = true, ...init }: RequestOptions = {},
+  { baseUrl = config.apiBaseUrl, parseJson = true, ...init }: RequestOptions = {},
 ): Promise<T> {
   const url = buildUrl(path, baseUrl);
   const response = await fetch(url, {
@@ -45,7 +43,7 @@ export async function apiRequest<T>(
   try {
     payload = (await response.json()) as ApiResponse<T>;
   } catch (error) {
-    if (process.env.NODE_ENV !== "production") {
+    if (config.isDevelopment) {
       console.error("Failed to parse API response", { url, error });
     }
     throw new ApiError(response.status, "InvalidJsonResponse", undefined, undefined);

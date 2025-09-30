@@ -10,6 +10,7 @@ import {
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 
 import { createQueryClient } from "@/lib/query-client";
+import { config } from "@/lib/config";
 import type { AppLocale } from "@/lib/i18n/config";
 
 type AppProvidersProps = {
@@ -35,7 +36,7 @@ export function AppProviders({
         <HydrationBoundary state={dehydratedState}>
           {children}
         </HydrationBoundary>
-        {process.env.NODE_ENV !== "production" ? (
+        {config.isDevelopment ? (
           <ReactQueryDevtools
             initialIsOpen={false}
             buttonPosition="bottom-right"

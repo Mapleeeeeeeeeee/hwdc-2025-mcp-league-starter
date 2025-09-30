@@ -140,6 +140,7 @@ features/<feature>/
 ### `lib`
 
 - 放置跨 domain 的工具函式、常數、型別、錯誤映射。
+- 包含 `config.ts`：統一管理環境變數與應用配置，提供型別安全存取。
 - 不得引用 `features`，維持依賴單向性。
 
 ### `styles`

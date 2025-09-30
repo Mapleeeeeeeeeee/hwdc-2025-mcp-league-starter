@@ -11,3 +11,8 @@ export type McpServersSnapshot = {
   initialized: boolean;
   servers: McpServer[];
 };
+
+export type McpToolSelection = {
+  server: string;
+  functions?: string[];
+};

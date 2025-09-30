@@ -3,6 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { LandingHero } from "@/components/chat/LandingHero";
 import { ServerOverview } from "@/components/mcp/ServerOverview";
 import { listServers } from "@/features/mcp";
+import { config } from "@/lib/config";
 import type { McpServersSnapshot } from "@/features/mcp";
 
 export default async function LandingPage() {
@@ -13,7 +14,7 @@ export default async function LandingPage() {
   try {
     initialSnapshot = await listServers();
   } catch (error) {
-    if (process.env.NODE_ENV !== "production") {
+    if (config.isDevelopment) {
       console.error("Failed to prefetch MCP servers", error);
     }
   }

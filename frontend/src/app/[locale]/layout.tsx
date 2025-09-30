@@ -8,9 +8,9 @@ import { LOCALES } from "@/lib/i18n/config";
 
 type LocaleLayoutProps = {
   children: ReactNode;
-  params: {
+  params: Promise<{
     locale: string;
-  };
+  }>;
 };
 
 const SUPPORTED_LOCALES = new Set<AppLocale>(LOCALES);
@@ -21,8 +21,10 @@ export function generateStaticParams() {
 
 export default async function LocaleLayout({
   children,
-  params: { locale },
+  params,
 }: LocaleLayoutProps) {
+  const { locale } = await params;
+
   if (!locale) {
     notFound();
   }
