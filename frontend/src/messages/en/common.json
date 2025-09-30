@@ -1,0 +1,14 @@
+{
+  "app": {
+    "name": "HWDC 2025 MCP League"
+  },
+  "landing": {
+    "title": "Chat assistant powered by MCP tools",
+    "subtitle": "Enable MCP servers to experience tool-augmented workflows in seconds.",
+    "cta": "Start chatting"
+  },
+  "settings": {
+    "title": "Settings",
+    "mcpSection": "MCP Servers"
+  }
+}

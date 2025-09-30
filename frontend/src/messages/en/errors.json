@@ -1,0 +1,7 @@
+{
+  "generic": "Something went wrong. Please try again later.",
+  "mcp": {
+    "unreachable": "Unable to reach MCP server: {server}",
+    "notInitialized": "The MCP system has not finished initialising yet."
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "app": {
+    "name": "HWDC 2025 MCP League"
+  },
+  "landing": {
+    "title": "與工具協作的對話助理",
+    "subtitle": "啟用 MCP 伺服器後即刻體驗工具增強的 AI 流程。",
+    "cta": "開始互動"
+  },
+  "settings": {
+    "title": "設定",
+    "mcpSection": "MCP 伺服器"
+  }
+}
