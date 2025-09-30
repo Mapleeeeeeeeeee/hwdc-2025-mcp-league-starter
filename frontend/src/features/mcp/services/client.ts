@@ -1,4 +1,4 @@
-import { apiRequest } from "@/lib/api/api-client";
+import { apiClient } from "@/lib/api/api-client";
 
 import type { McpServer, McpServersSnapshot } from "../types";
 
@@ -37,6 +37,6 @@ function mapServersSnapshot(dto: ListServersResponseDto): McpServersSnapshot {
 const LIST_SERVERS_PATH = "/api/v1/mcp/servers";
 
 export async function listServers(): Promise<McpServersSnapshot> {
-  const data = await apiRequest<ListServersResponseDto>(LIST_SERVERS_PATH);
+  const data = await apiClient.get<ListServersResponseDto>(LIST_SERVERS_PATH);
   return mapServersSnapshot(data);
 }

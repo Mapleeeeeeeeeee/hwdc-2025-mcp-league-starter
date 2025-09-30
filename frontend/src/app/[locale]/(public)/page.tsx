@@ -1,9 +1,9 @@
 import { getTranslations } from "next-intl/server";
 
 import { LandingHero } from "@/components/chat/LandingHero";
+import { ChatShell } from "@/components/chat/ChatShell";
 import { ServerOverview } from "@/components/mcp/ServerOverview";
 import { listServers } from "@/features/mcp";
-import { config } from "@/lib/config";
 import type { McpServersSnapshot } from "@/features/mcp";
 
 export default async function LandingPage() {
@@ -14,7 +14,7 @@ export default async function LandingPage() {
   try {
     initialSnapshot = await listServers();
   } catch (error) {
-    if (config.isDevelopment) {
+    if (process.env.NODE_ENV !== "production") {
       console.error("Failed to prefetch MCP servers", error);
     }
   }
@@ -26,6 +26,8 @@ export default async function LandingPage() {
         subtitle={tCommon("landing.subtitle")}
         cta={tCommon("landing.cta")}
       />
+
+      <ChatShell />
 
       <ServerOverview initialData={initialSnapshot} />
     </div>

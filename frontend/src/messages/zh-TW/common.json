@@ -7,6 +7,21 @@
     "subtitle": "啟用 MCP 伺服器後即刻體驗工具增強的 AI 流程。",
     "cta": "開始互動"
   },
+  "chat": {
+    "title": "智慧對話",
+    "emptyState": "目前沒有訊息，輸入內容開始對話。",
+    "inputPlaceholder": "輸入訊息...",
+    "send": "送出",
+    "assistantLabel": "助理",
+    "userLabel": "我",
+    "status": {
+      "pending": "處理中",
+      "generating": "助理正在思考..."
+    },
+    "error": {
+      "generic": "送出訊息失敗，請稍後再試。"
+    }
+  },
   "settings": {
     "title": "設定",
     "mcpSection": "MCP 伺服器"

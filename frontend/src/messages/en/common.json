@@ -7,6 +7,21 @@
     "subtitle": "Enable MCP servers to experience tool-augmented workflows in seconds.",
     "cta": "Start chatting"
   },
+  "chat": {
+    "title": "Conversation",
+    "emptyState": "No messages yet. Say hello to start the conversation.",
+    "inputPlaceholder": "Type your message...",
+    "send": "Send",
+    "assistantLabel": "Assistant",
+    "userLabel": "You",
+    "status": {
+      "pending": "Thinking",
+      "generating": "Assistant is crafting a reply..."
+    },
+    "error": {
+      "generic": "Something went wrong while sending. Please try again."
+    }
+  },
   "settings": {
     "title": "Settings",
     "mcpSection": "MCP Servers"
