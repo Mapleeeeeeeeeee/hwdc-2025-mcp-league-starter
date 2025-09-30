@@ -1,36 +1,56 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Frontend (Next.js 15)
 
-## Getting Started
+本目錄為講座 MVP 的前端專案，採用 Next.js 15（App Router）+ TypeScript + Tailwind。以下整理常用指令、環境設定與文件索引。
 
-First, run the development server:
+## 需求條件
+
+- Node.js 20+
+- pnpm 9+
+- 後端 API 服務（預設 http://localhost:8000）
+
+## 安裝與啟動
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+pnpm install
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+瀏覽器開啟 `http://localhost:3000/zh-TW`（未指定語系時會由 middleware 導向預設語系）。
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 常用指令（預計導入）
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| 指令            | 說明                                 |
+| --------------- | ------------------------------------ |
+| `pnpm dev`      | 開發模式，含熱重載                   |
+| `pnpm build`    | 建置產生 `.next`                     |
+| `pnpm lint`     | ESLint / Stylelint（導入後更新腳本） |
+| `pnpm test`     | Vitest 單元測試                      |
+| `pnpm test:e2e` | Playwright 端對端測試                |
 
-## Learn More
+> 測試與 lint 指令會在導入對應工具後寫入 `package.json`。
 
-To learn more about Next.js, take a look at the following resources:
+## 環境變數
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| 變數                       | 預設                    | 說明                                   |
+| -------------------------- | ----------------------- | -------------------------------------- |
+| `NEXT_PUBLIC_API_BASE_URL` | `http://localhost:8000` | 後端 FastAPI base URL                  |
+| `NEXT_LOCALE`              | -                       | 指定預設語系（通常由 middleware 決定） |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+專案根目錄已有 `.env.template`，在前端僅需填寫上述變數即可啟動。
 
-## Deploy on Vercel
+## 操作流程
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. 啟動後端 API 服務。
+2. 執行 `pnpm dev` 啟動前端。
+3. 首頁直接呈現對話介面，點選右上角齒輪可開啟設定 Drawer。
+4. 在設定中調整模型、MCP 伺服器以及語系後即可開始互動。
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 相關文件
+
+- [前端資料流設計](docs/data-flow.md)
+- [i18n 架構](docs/i18n.md)
+- [MCP 整合規劃](docs/mcp-integration.md)
+- [UI / 設計規範](docs/ui-guidelines.md)
+- [測試策略](docs/testing.md)
+
+更多內容請參考 `frontend/docs/README.md`。
