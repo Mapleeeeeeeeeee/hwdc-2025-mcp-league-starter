@@ -2,6 +2,7 @@ import tomllib
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from src.api.exception_handlers import register_exception_handlers
 from src.api.v1.conversation_router import router as conversation_router
@@ -38,6 +39,15 @@ app = FastAPI(
     version=get_version(),
     description="FastAPI backend for HWDC 2025 MCP League Starter",
     lifespan=lifespan,
+)
+
+# Enable CORS for configured client origins
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.cors_allowed_origins,
+    allow_credentials=True,
+    allow_methods=settings.cors_allowed_methods,
+    allow_headers=settings.cors_allowed_headers,
 )
 
 # Add trace middleware for request tracking and performance monitoring

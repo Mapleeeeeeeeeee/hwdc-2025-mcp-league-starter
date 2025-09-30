@@ -21,6 +21,34 @@ class Settings(BaseSettings):
         default=Path("config/active_llm_model.json"),
         alias="LLM_ACTIVE_MODEL_FILE",
     )
+    cors_allowed_origins: list[str] = Field(
+        default_factory=lambda: [
+            "http://localhost:3000",
+            "http://localhost:3001",
+        ],
+        alias="CORS_ALLOWED_ORIGINS",
+    )
+    cors_allowed_methods: list[str] = Field(
+        default_factory=lambda: [
+            "GET",
+            "POST",
+            "PUT",
+            "PATCH",
+            "DELETE",
+            "OPTIONS",
+        ],
+        alias="CORS_ALLOWED_METHODS",
+    )
+    cors_allowed_headers: list[str] = Field(
+        default_factory=lambda: [
+            "Authorization",
+            "Content-Type",
+            "Accept",
+            "Accept-Language",
+            "X-Requested-With",
+        ],
+        alias="CORS_ALLOWED_HEADERS",
+    )
 
     @property
     def is_development(self) -> bool:
@@ -51,6 +79,45 @@ class Settings(BaseSettings):
         if root not in resolved.parents and resolved != root:
             raise ValueError("Configured path must reside within the project directory")
         return resolved
+
+    @field_validator(
+        "cors_allowed_origins",
+        "cors_allowed_methods",
+        "cors_allowed_headers",
+        mode="before",
+    )
+    @classmethod
+    def _parse_cors_list(cls, value: Any) -> list[str]:
+        if value is None or value == "":
+            return []
+        if isinstance(value, str):
+            import json
+
+            trimmed = value.strip()
+
+            # Allow JSON-style arrays for convenience
+            if (trimmed.startswith("[") and trimmed.endswith("]")) or (
+                trimmed.startswith("(") and trimmed.endswith(")")
+            ):
+                try:
+                    parsed = json.loads(trimmed.replace("(", "[").replace(")", "]"))
+                    if isinstance(parsed, (list, tuple)):
+                        return [
+                            str(origin).strip()
+                            for origin in parsed
+                            if str(origin).strip()
+                        ]
+                except json.JSONDecodeError as exc:
+                    raise ValueError(
+                        "CORS list JSON parsing failed",
+                    ) from exc
+
+            return [origin.strip() for origin in trimmed.split(",") if origin.strip()]
+        if isinstance(value, (list, tuple, set)):
+            return [str(origin).strip() for origin in value if str(origin).strip()]
+        raise TypeError(
+            "CORS settings must be a comma-separated string or list of strings"
+        )
 
     def get_secret(
         self,
