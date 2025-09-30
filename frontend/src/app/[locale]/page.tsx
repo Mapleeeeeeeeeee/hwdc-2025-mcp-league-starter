@@ -5,6 +5,7 @@ import { ChatShell } from "@/components/chat/ChatShell";
 import { ServerOverview } from "@/components/mcp/ServerOverview";
 import { listServers } from "@/features/mcp";
 import type { McpServersSnapshot } from "@/features/mcp";
+import { config } from "@/lib/config";
 
 type LocaleLandingPageProps = {
   params: Promise<{
@@ -27,7 +28,7 @@ export default async function LocaleLandingPage({
   try {
     initialSnapshot = await listServers();
   } catch (error) {
-    if (process.env.NODE_ENV !== "production") {
+    if (config.isDevelopment) {
       console.error("Failed to prefetch MCP servers", error);
     }
   }
@@ -38,6 +39,8 @@ export default async function LocaleLandingPage({
         title={tCommon("landing.title")}
         subtitle={tCommon("landing.subtitle")}
         cta={tCommon("landing.cta")}
+        badge={tCommon("landing.badge")}
+        footerLabel={tCommon("landing.protocol")}
       />
 
       <ChatShell />

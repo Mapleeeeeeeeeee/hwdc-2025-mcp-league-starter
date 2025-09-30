@@ -1,11 +1,27 @@
 import { ReactNode } from "react";
 import { getMessages, setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
+import { Geist, Geist_Mono } from "next/font/google";
 
 import { AppProviders } from "@/app/providers";
 import { AppShell } from "@/components/layout/AppShell";
 import type { AppLocale } from "@/lib/i18n/config";
 import { LOCALES } from "@/lib/i18n/config";
+import { config } from "@/lib/config";
+
+import "../globals.css";
+
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+  display: "swap",
+});
 
 type LocaleLayoutProps = {
   children: ReactNode;
@@ -36,7 +52,7 @@ export default async function LocaleLayout({
     notFound();
   }
 
-  if (process.env.NODE_ENV !== "production") {
+  if (config.isDevelopment) {
     console.log("[LocaleLayout] locale resolved", nextLocale);
   }
 
@@ -45,8 +61,14 @@ export default async function LocaleLayout({
   const messages = await getMessages();
 
   return (
-    <AppProviders locale={nextLocale} messages={messages}>
-      <AppShell>{children}</AppShell>
-    </AppProviders>
+    <html lang={nextLocale} suppressHydrationWarning>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} bg-neutral-950 text-neutral-50 antialiased`}
+      >
+        <AppProviders locale={nextLocale} messages={messages}>
+          <AppShell>{children}</AppShell>
+        </AppProviders>
+      </body>
+    </html>
   );
 }
