@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 
+import { LocaleSwitcher } from "@/components/i18n/LocaleSwitcher";
+
 export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-b from-neutral-950 via-neutral-930 to-neutral-960 text-neutral-50">
@@ -8,9 +10,12 @@ export function AppShell({ children }: { children: ReactNode }) {
           <span className="text-sm font-semibold uppercase tracking-[0.4em] text-white/70">
             HWDC 2025
           </span>
-          <span className="text-sm font-medium text-white/60">
-            MCP League Starter
-          </span>
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-medium text-white/60">
+              MCP League Starter
+            </span>
+            <LocaleSwitcher />
+          </div>
         </div>
       </header>
       <main className="flex-1">

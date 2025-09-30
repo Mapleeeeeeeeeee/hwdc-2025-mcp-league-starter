@@ -12,6 +12,7 @@ import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { createQueryClient } from "@/lib/query-client";
 import { config } from "@/lib/config";
 import type { AppLocale } from "@/lib/i18n/config";
+import { DEFAULT_TIME_ZONE } from "@/lib/i18n/config";
 
 type AppProvidersProps = {
   children: ReactNode;
@@ -28,10 +29,12 @@ export function AppProviders({
 }: AppProvidersProps) {
   const [queryClient] = useState(() => createQueryClient());
 
-  const memoizedMessages = useMemo(() => messages, [messages]);
-
   return (
-    <NextIntlClientProvider locale={locale} messages={memoizedMessages}>
+    <NextIntlClientProvider
+      locale={locale}
+      messages={messages}
+      timeZone={DEFAULT_TIME_ZONE}
+    >
       <QueryClientProvider client={queryClient}>
         <HydrationBoundary state={dehydratedState}>
           {children}

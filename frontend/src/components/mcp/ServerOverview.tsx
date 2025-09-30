@@ -74,7 +74,7 @@ export function ServerOverview({ initialData }: ServerOverviewProps) {
           {errorMessage}
           {error instanceof ApiError && error.traceId ? (
             <span className="ml-2 text-xs text-red-200/70">
-              trace: {error.traceId}
+              {t("traceLabel")}: {error.traceId}
             </span>
           ) : null}
         </div>

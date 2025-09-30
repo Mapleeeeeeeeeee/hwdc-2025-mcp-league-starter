@@ -23,3 +23,24 @@ export type ConversationReply = {
   content: string;
   modelKey: string;
 };
+
+export type ConversationStreamChunk = {
+  conversationId: string;
+  messageId: string;
+  delta: string;
+  modelKey: string;
+};
+
+export type LLMModelDescriptor = {
+  key: string;
+  provider: string;
+  modelId: string;
+  supportsStreaming: boolean;
+  metadata?: Record<string, string | number | boolean | null>;
+  baseUrl?: string | null;
+};
+
+export type ListModelsResponse = {
+  activeModelKey: string;
+  models: LLMModelDescriptor[];
+};

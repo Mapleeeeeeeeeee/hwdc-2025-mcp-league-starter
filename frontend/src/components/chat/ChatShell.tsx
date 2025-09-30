@@ -1,6 +1,13 @@
 "use client";
 
-import { FormEvent, useCallback, useMemo, useState } from "react";
+import {
+  FormEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useTranslations } from "next-intl";
 
 import { ApiError } from "@/lib/api/api-error";
@@ -8,6 +15,9 @@ import {
   ConversationMessage,
   ConversationReply,
   ConversationRequestInput,
+  ConversationStreamChunk,
+  streamConversationRequest,
+  useConversationModels,
 } from "@/features/conversation";
 import { useConversationMutation } from "@/features/conversation";
 
@@ -40,6 +50,9 @@ function getErrorMessage(
   error: unknown,
 ) {
   if (!(error instanceof ApiError)) {
+    if (error instanceof Error && error.message) {
+      return error.message;
+    }
     return translateChat("error.generic");
   }
 
@@ -88,17 +101,73 @@ export function ChatShell({
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [inputValue, setInputValue] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
+  const [isStreamingEnabled, setIsStreamingEnabled] = useState(true);
+  const [isStreamingActive, setIsStreamingActive] = useState(false);
+  const [selectedModelKey, setSelectedModelKey] = useState<string | undefined>(
+    modelKey,
+  );
+
+  const streamControllerRef = useRef<AbortController | null>(null);
 
   const mutation = useConversationMutation();
+  const modelsQuery = useConversationModels();
+
+  const models = modelsQuery.data.models;
+
+  useEffect(() => {
+    if (!models.length) {
+      return;
+    }
+
+    const preferred =
+      modelKey ?? modelsQuery.data.activeModelKey ?? models[0]?.key;
+
+    setSelectedModelKey((current) => {
+      if (current && models.some((item) => item.key === current)) {
+        return current;
+      }
+      return preferred;
+    });
+  }, [modelKey, models, modelsQuery.data.activeModelKey]);
+
+  const selectedModel = useMemo(
+    () => models.find((item) => item.key === selectedModelKey),
+    [models, selectedModelKey],
+  );
+
+  const supportsStreaming = Boolean(selectedModel?.supportsStreaming);
+
+  useEffect(() => {
+    if (!supportsStreaming && isStreamingEnabled) {
+      setIsStreamingEnabled(false);
+    }
+  }, [supportsStreaming, isStreamingEnabled]);
+
+  useEffect(
+    () => () => {
+      streamControllerRef.current?.abort();
+    },
+    [],
+  );
 
   const hasMessages = messages.length > 0;
 
   const placeholder = useMemo(() => tChat("inputPlaceholder"), [tChat]);
 
+  const isBusy = mutation.isPending || isStreamingActive;
+
+  const resetStreamingController = useCallback(() => {
+    if (streamControllerRef.current) {
+      streamControllerRef.current.abort();
+      streamControllerRef.current = null;
+    }
+    setIsStreamingActive(false);
+  }, []);
+
   const handleSubmit = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
-      if (mutation.isPending) return;
+      if (isBusy) return;
 
       const trimmed = inputValue.trim();
       if (!trimmed) return;
@@ -106,55 +175,194 @@ export function ChatShell({
       setFormError(null);
       setInputValue("");
 
+      resetStreamingController();
+
       const userMessage: ChatMessage = {
         id: crypto.randomUUID(),
         role: "user",
         content: trimmed,
       };
 
-      setMessages((prev) => [...prev, userMessage]);
-
-      const history = toHistory([...messages, userMessage]);
+      const nextMessages = [...messages, userMessage];
+      const history = toHistory(nextMessages);
 
       const payload: ConversationRequestInput = {
         conversationId,
         history,
         userId,
-        modelKey,
+        modelKey: selectedModelKey,
         tools: defaultTools,
       };
 
-      try {
-        const reply = await mutation.mutateAsync(payload);
-        setMessages((prev) => appendAssistantMessage(prev, reply));
-      } catch (error) {
-        setFormError(getErrorMessage(tChat, tErrors, error));
+      const shouldStream = isStreamingEnabled && supportsStreaming;
+
+      if (shouldStream) {
+        const placeholderId = crypto.randomUUID();
+        const assistantPlaceholder: ChatMessage = {
+          id: placeholderId,
+          role: "assistant",
+          content: "",
+        };
+
+        setMessages([...nextMessages, assistantPlaceholder]);
+        setIsStreamingActive(true);
+
+        const handleChunk = (chunk: ConversationStreamChunk) => {
+          setMessages((prev) => {
+            let found = false;
+            const updated = prev.map((message) => {
+              if (
+                message.id === placeholderId ||
+                message.id === chunk.messageId
+              ) {
+                found = true;
+                return {
+                  ...message,
+                  id: chunk.messageId,
+                  content: `${message.content}${chunk.delta}`,
+                };
+              }
+              return message;
+            });
+
+            if (!found) {
+              return [
+                ...updated,
+                {
+                  id: chunk.messageId,
+                  role: "assistant",
+                  content: chunk.delta,
+                },
+              ];
+            }
+
+            return updated;
+          });
+        };
+
+        const handleStreamError = (error: Error) => {
+          streamControllerRef.current = null;
+          setIsStreamingActive(false);
+          setFormError(error.message || tChat("error.generic"));
+          setMessages((prev) =>
+            prev.filter((message) => message.id !== placeholderId),
+          );
+        };
+
+        const handleStreamComplete = () => {
+          streamControllerRef.current = null;
+          setIsStreamingActive(false);
+        };
+
+        streamControllerRef.current = streamConversationRequest(payload, {
+          onChunk: handleChunk,
+          onError: handleStreamError,
+          onComplete: handleStreamComplete,
+        });
+      } else {
+        setMessages(nextMessages);
+
+        try {
+          const reply = await mutation.mutateAsync(payload);
+          setMessages((prev) => appendAssistantMessage(prev, reply));
+        } catch (error) {
+          setFormError(getErrorMessage(tChat, tErrors, error));
+        }
       }
     },
     [
       conversationId,
       defaultTools,
+      isBusy,
+      isStreamingEnabled,
       inputValue,
       messages,
-      modelKey,
       mutation,
+      resetStreamingController,
+      selectedModelKey,
+      supportsStreaming,
       tChat,
       tErrors,
       userId,
     ],
   );
 
+  const handleToggleStreaming = useCallback(() => {
+    if (!supportsStreaming) return;
+    setIsStreamingEnabled((prev) => !prev);
+  }, [supportsStreaming]);
+
+  const handleModelChange = useCallback((value: string) => {
+    setSelectedModelKey(value);
+  }, []);
+
   return (
     <section className="flex flex-col gap-4 rounded-3xl border border-white/10 bg-white/5 p-6">
-      <header className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-white/90">
-          {tChat("title")}
-        </h2>
-        {mutation.isPending ? (
-          <span className="text-xs font-medium uppercase tracking-[0.3em] text-emerald-300">
-            {tChat("status.pending")}
-          </span>
-        ) : null}
+      <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="flex flex-col gap-2">
+          <h2 className="text-lg font-semibold text-white/90">
+            {tChat("title")}
+          </h2>
+          {isBusy ? (
+            <span className="text-xs font-medium uppercase tracking-[0.3em] text-emerald-300">
+              {isStreamingActive
+                ? tChat("status.streaming")
+                : tChat("status.pending")}
+            </span>
+          ) : null}
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3 text-xs">
+          <label className="flex items-center gap-2 rounded-full border border-white/10 bg-white/10/20 px-3 py-1 text-white/70">
+            <span className="font-semibold uppercase tracking-[0.3em] text-white/50">
+              {tChat("model.label")}
+            </span>
+            <select
+              className="min-w-[9rem] bg-transparent text-white focus:outline-none"
+              value={selectedModelKey ?? ""}
+              onChange={(event) => handleModelChange(event.target.value)}
+              disabled={modelsQuery.isPending || !models.length}
+            >
+              {modelsQuery.isPending ? (
+                <option value="" disabled>
+                  {tChat("model.loading")}
+                </option>
+              ) : null}
+              {!models.length ? (
+                <option value="" disabled>
+                  {tChat("model.empty")}
+                </option>
+              ) : null}
+              {models.map((model) => (
+                <option
+                  key={model.key}
+                  value={model.key}
+                  className="text-black"
+                >
+                  {`${model.key} · ${model.modelId}`}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <button
+            type="button"
+            role="switch"
+            aria-checked={isStreamingEnabled && supportsStreaming}
+            aria-disabled={!supportsStreaming}
+            onClick={handleToggleStreaming}
+            className={`flex items-center gap-2 rounded-full border border-white/10 px-3 py-1 transition ${supportsStreaming ? "bg-emerald-400/20 text-emerald-100 hover:bg-emerald-300/30" : "cursor-not-allowed bg-white/10 text-white/40"}`}
+          >
+            <span className="font-semibold uppercase tracking-[0.3em]">
+              {tChat("streaming.label")}
+            </span>
+            <span className="text-sm font-medium">
+              {supportsStreaming
+                ? tChat(isStreamingEnabled ? "streaming.on" : "streaming.off")
+                : tChat("streaming.unsupported")}
+            </span>
+          </button>
+        </div>
       </header>
 
       <div className="flex max-h-[420px] flex-col gap-3 overflow-y-auto rounded-2xl border border-white/5 bg-neutral-950/60 p-4">
@@ -178,11 +386,13 @@ export function ChatShell({
           </div>
         )}
 
-        {mutation.isPending ? (
+        {isBusy ? (
           <article className="w-fit rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-sm text-white/90">
             <span className="inline-flex items-center gap-2">
               <span className="size-2 animate-pulse rounded-full bg-white/70" />
-              {tChat("status.generating")}
+              {isStreamingActive
+                ? tChat("status.streaming")
+                : tChat("status.generating")}
             </span>
           </article>
         ) : null}
@@ -195,11 +405,11 @@ export function ChatShell({
             placeholder={placeholder}
             value={inputValue}
             onChange={(event) => setInputValue(event.target.value)}
-            disabled={mutation.isPending}
+            disabled={isBusy}
           />
           <button
             type="submit"
-            disabled={mutation.isPending || !inputValue.trim()}
+            disabled={isBusy || !inputValue.trim()}
             className="inline-flex items-center rounded-full bg-emerald-400 px-4 py-1.5 text-sm font-semibold text-emerald-950 transition hover:bg-emerald-300 disabled:pointer-events-none disabled:opacity-50"
           >
             {tChat("send")}
