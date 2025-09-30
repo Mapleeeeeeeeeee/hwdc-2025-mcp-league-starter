@@ -1,42 +1,8 @@
 import { apiClient } from "@/lib/api/api-client";
+import { API_PATHS } from "@/lib/api/paths";
 
-import type { McpServer, McpServersSnapshot } from "../types";
-
-type McpServerDto = {
-  name: string;
-  description?: string | null;
-  connected: boolean;
-  enabled: boolean;
-  function_count: number;
-  functions: string[];
-};
-
-type ListServersResponseDto = {
-  initialized: boolean;
-  servers: McpServerDto[];
-};
-
-function mapServer(dto: McpServerDto): McpServer {
-  return {
-    name: dto.name,
-    description: dto.description ?? undefined,
-    connected: dto.connected,
-    enabled: dto.enabled,
-    functionCount: dto.function_count,
-    functions: dto.functions,
-  };
-}
-
-function mapServersSnapshot(dto: ListServersResponseDto): McpServersSnapshot {
-  return {
-    initialized: dto.initialized,
-    servers: dto.servers.map(mapServer),
-  };
-}
-
-const LIST_SERVERS_PATH = "/api/v1/mcp/servers";
+import type { McpServersSnapshot } from "../types";
 
 export async function listServers(): Promise<McpServersSnapshot> {
-  const data = await apiClient.get<ListServersResponseDto>(LIST_SERVERS_PATH);
-  return mapServersSnapshot(data);
+  return apiClient.get<McpServersSnapshot>(API_PATHS.MCP.SERVERS);
 }

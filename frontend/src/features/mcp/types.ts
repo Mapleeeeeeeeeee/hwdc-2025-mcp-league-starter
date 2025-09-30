@@ -1,6 +1,6 @@
 export type McpServer = {
   name: string;
-  description?: string;
+  description?: string | null;
   connected: boolean;
   enabled: boolean;
   functionCount: number;
