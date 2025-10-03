@@ -6,6 +6,16 @@
       "timeout_seconds": 60,
       "enabled": true,
       "description": "Filesystem browsing tools"
+    },
+    "Context7": {
+      "command": "npx -y @upstash/context7-mcp@latest",
+      "env": {},
+      "timeout_seconds": 60,
+      "enabled": true,
+      "description": "Context7 documentation tools"
+    },
+    "ms365": {
+      "command": "npx -y @softeria/ms-365-mcp-server --org-mode"
     }
   }
 }
