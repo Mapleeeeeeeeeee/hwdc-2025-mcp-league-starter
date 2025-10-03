@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useMemo, useState } from "react";
+import { ReactNode, useState } from "react";
 import { NextIntlClientProvider } from "next-intl";
 import {
   QueryClientProvider,

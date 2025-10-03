@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Suspense } from "react";
 
 import { LocaleSwitcher } from "@/components/i18n/LocaleSwitcher";
 
@@ -14,7 +15,13 @@ export function AppShell({ children }: { children: ReactNode }) {
             <span className="text-sm font-medium text-white/60">
               MCP League Starter
             </span>
-            <LocaleSwitcher />
+            <Suspense
+              fallback={
+                <div className="h-6 w-20 animate-pulse rounded bg-white/10" />
+              }
+            >
+              <LocaleSwitcher />
+            </Suspense>
           </div>
         </div>
       </header>
