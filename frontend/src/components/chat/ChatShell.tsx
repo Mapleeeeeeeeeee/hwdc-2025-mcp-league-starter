@@ -41,7 +41,9 @@ type ChatShellProps = {
 };
 
 function toHistory(messages: ChatMessage[]): ConversationMessage[] {
-  return messages.map(({ role, content }) => ({ role, content }));
+  return messages
+    .filter(({ content }) => content.trim().length > 0)
+    .map(({ role, content }) => ({ role, content }));
 }
 
 function getErrorMessage(

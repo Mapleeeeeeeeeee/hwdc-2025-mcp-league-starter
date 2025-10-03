@@ -1,6 +1,7 @@
 import { apiClient } from "@/lib/api/api-client";
 import { API_PATHS } from "@/lib/api/paths";
 import { config } from "@/lib/config";
+import { fetchEventSource } from "@microsoft/fetch-event-source";
 
 import type {
   ConversationReply,
@@ -14,6 +15,9 @@ type StreamEventHandlers = {
   onError?: (error: Error) => void;
   onComplete?: () => void;
 };
+
+const SSE_EVENT_PREFIX = "event:";
+const SSE_DATA_PREFIX = "data:";
 
 function buildAbsoluteUrl(path: string) {
   return new URL(path, config.apiBaseUrl).toString();
@@ -38,69 +42,42 @@ export function streamConversationRequest(
 ): AbortController {
   const controller = new AbortController();
 
-  const processStream = async () => {
-    try {
-      const response = await fetch(
-        buildAbsoluteUrl(API_PATHS.CONVERSATION.STREAM),
-        {
-          method: "POST",
-          credentials: "include",
-          cache: "no-store",
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "text/event-stream",
-          },
-          body: JSON.stringify(payload),
-          signal: controller.signal,
-        },
-      );
+  const url = buildAbsoluteUrl(API_PATHS.CONVERSATION.STREAM);
 
-      if (!response.ok || !response.body) {
-        throw new Error(
-          `Streaming request failed with status ${response.status}`,
+  fetchEventSource(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "text/event-stream",
+    },
+    body: JSON.stringify(payload),
+    credentials: "include",
+    signal: controller.signal,
+    onmessage(event) {
+      handleEvent(event.data, handlers);
+    },
+    async onopen(response) {
+      if (response.ok) {
+        // Connection opened successfully
+      } else {
+        handlers.onError?.(
+          new Error(`Streaming request failed with status ${response.status}`),
         );
       }
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder("utf-8");
-      let buffer = "";
-
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) {
-          break;
-        }
-
-        buffer += decoder.decode(value, { stream: true });
-
-        let separatorIndex = buffer.indexOf("\n\n");
-        while (separatorIndex !== -1) {
-          const rawEvent = buffer.slice(0, separatorIndex);
-          buffer = buffer.slice(separatorIndex + 2);
-          handleEvent(rawEvent, handlers);
-          separatorIndex = buffer.indexOf("\n\n");
-        }
+    },
+    onerror(error) {
+      if (!controller.signal.aborted) {
+        handlers.onError?.(
+          error instanceof Error ? error : new Error(String(error)),
+        );
       }
-
-      // flush any remaining event (no trailing newline)
-      if (buffer.trim().length > 0) {
-        handleEvent(buffer, handlers);
-      }
-
+    },
+    onclose() {
       if (!controller.signal.aborted) {
         handlers.onComplete?.();
       }
-    } catch (error) {
-      if (controller.signal.aborted) {
-        return;
-      }
-      handlers.onError?.(
-        error instanceof Error ? error : new Error(String(error)),
-      );
-    }
-  };
-
-  void processStream();
+    },
+  });
 
   return controller;
 }
@@ -119,10 +96,10 @@ function handleEvent(eventPayload: string, handlers: StreamEventHandlers) {
   const dataLines: string[] = [];
 
   for (const line of lines) {
-    if (line.startsWith("event:")) {
-      eventType = line.slice("event:".length).trim();
-    } else if (line.startsWith("data:")) {
-      dataLines.push(line.slice("data:".length).trim());
+    if (line.startsWith(SSE_EVENT_PREFIX)) {
+      eventType = line.slice(SSE_EVENT_PREFIX.length).trim();
+    } else if (line.startsWith(SSE_DATA_PREFIX)) {
+      dataLines.push(line.slice(SSE_DATA_PREFIX.length).trim());
     }
   }
 

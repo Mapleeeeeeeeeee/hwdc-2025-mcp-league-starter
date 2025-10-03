@@ -8,6 +8,7 @@ from functools import lru_cache
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Response
+from src.core import get_logger
 from src.integrations.llm import ConversationAgentFactory
 from src.models import (
     ConversationReply,
@@ -28,6 +29,7 @@ def get_agent_factory() -> ConversationAgentFactory:
 
 
 router = APIRouter(prefix="/conversation", tags=["conversation"])
+logger = get_logger(__name__)
 
 
 AgentFactoryDep = Annotated[ConversationAgentFactory, Depends(get_agent_factory)]
@@ -79,6 +81,15 @@ async def stream_conversation_reply(
                 "type": exc.__class__.__name__,
                 "message": exc.detail,
                 "context": exc.context or None,
+            }
+            yield f"event: error\ndata: {json.dumps(error_payload)}\n\n"
+        except Exception as exc:  # pragma: no cover - defensive
+            logger.exception("Streaming conversation failed", exc_info=exc)
+            message = getattr(exc, "detail", str(exc)) or "Streaming error"
+            error_payload = {
+                "type": exc.__class__.__name__,
+                "message": message,
+                "context": getattr(exc, "context", None),
             }
             yield f"event: error\ndata: {json.dumps(error_payload)}\n\n"
 
