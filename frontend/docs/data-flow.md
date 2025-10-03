@@ -16,10 +16,11 @@
 
 ## API Client 流程
 
-1. `lib/api-client.ts`：封裝原生 `fetch`，處理 base URL、共用 header 與信封解包。預設從 `process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000"` 讀取後端位址，統一帶入 `credentials: "include"` 與 `cache: "no-store"`。
-2. `lib/api-error.ts`：定義 `ApiError` 類別，保存 `type`、`i18nKey`、`traceId`、`retryInfo`、`status`。僅在此層將錯誤結構化，不於此層直接上報或寫 log，交由呼叫端依情境決定（例如在 UI 觸發 Toast、或在集中式 error boundary 上報 Sentry）。
-3. `features/<domain>/services/client.ts`：針對每個 domain 建立 `listModels`、`listMcpServers` 等函式，內部呼叫 `apiClient.request`，並以 TypeScript 型別或 `zod` 解析確保資料正確。
-4. `features/<domain>/hooks`：在 Client Component 中使用 `useApi` / `useApiMutation`，統一 loading/error 處理，並在錯誤時透過 `next-intl` 顯示本地化訊息。
+1. `lib/api-client.ts`：封裝原生 `fetch`，處理 base URL、共用 header 與信封解包。預設從 `lib/config.ts` 的 `config.apiBaseUrl` 讀取後端位址（預設值為 `process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000"`），統一帶入 `credentials: "include"` 與 `cache: "no-store"`。
+2. `lib/api/paths.ts`：定義 `API_PATHS` 常數物件，集中管理所有 API endpoint paths，確保前端與後端 path 一致性。包含 API 版本管理和動態 path 生成函數。
+3. `apiClient` 物件：提供便利方法 `get()`, `post()`, `put()`, `patch()`, `delete()` 以提升開發體驗。
+4. `features/<domain>/services/client.ts`：針對每個 domain 建立 `listModels`、`listMcpServers` 等函式，內部呼叫 `apiClient.request`，並以 TypeScript 型別或 `zod` 解析確保資料正確。
+5. `features/<domain>/hooks`：在 Client Component 中使用 `useApi` / `useApiMutation`，統一 loading/error 處理，並在錯誤時透過 `next-intl` 顯示本地化訊息。
 
 ### APIResponse 信封
 
@@ -118,7 +119,7 @@ flowchart TD
 
 ## TODO
 
-- 實作 `lib/api-client.ts` 及 `ApiError` 類別（含 `tooManyRequests` 等 helper）。
+- 實作 `lib/config.ts` 配置模組（已完成）。
 - 建立 `lib/query-client.ts` 與 App 層 Provider。
 - 寫 `hooks/useApi.ts` / `hooks/useApiMutation.ts` 封裝 React Query，導出內建錯誤處理。
 - 補齊單元測試（mock APIResponse、重試行為、錯誤映射）。

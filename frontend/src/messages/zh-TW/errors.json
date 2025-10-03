@@ -1,0 +1,7 @@
+{
+  "generic": "發生未知錯誤，請稍後再試。",
+  "mcp": {
+    "unreachable": "無法連線到 MCP 伺服器：{server}",
+    "notInitialized": "MCP 系統尚未完成初始化。"
+  }
+}

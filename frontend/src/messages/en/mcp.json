@@ -1,0 +1,24 @@
+{
+  "servers": {
+    "sectionTitle": "Registered Servers",
+    "refresh": "Refresh",
+    "refreshing": "Refreshing…",
+    "initializing": "Initialising MCP system…",
+    "initialized": "{count} server(s)",
+    "traceLabel": "Trace ID",
+    "status": {
+      "connected": "Connected",
+      "disconnected": "Disconnected"
+    },
+    "labels": {
+      "functions": "Functions",
+      "enabled": "Enabled",
+      "functionsList": "Available Functions"
+    },
+    "enabled": {
+      "yes": "Enabled",
+      "no": "Disabled"
+    },
+    "empty": "No MCP servers available yet. Check the backend configuration."
+  }
+}

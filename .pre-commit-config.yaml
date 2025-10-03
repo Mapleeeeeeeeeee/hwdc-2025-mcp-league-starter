@@ -19,18 +19,14 @@ repos:
         pass_filenames: false
 
   # TypeScript/JavaScript linting and formatting
-  - repo: https://github.com/pre-commit/mirrors-eslint
-    rev: v9.17.0
+  - repo: local
     hooks:
-      - id: eslint
-        files: ^frontend/
-        types: [file]
-        types_or: [javascript, jsx, ts, tsx]
-        additional_dependencies:
-          - eslint@^9.17.0
-          - eslint-config-next@^15.1.0
-          - "@typescript-eslint/parser@^8.18.0"
-          - "@typescript-eslint/eslint-plugin@^8.18.0"
+      - id: eslint-frontend
+        name: eslint frontend
+        entry: bash -c 'cd frontend && pnpm lint'
+        language: system
+        pass_filenames: false
+        files: ^frontend/.*\.(js|jsx|ts|tsx)$
 
   - repo: https://github.com/pre-commit/mirrors-prettier
     rev: v4.0.0-alpha.8

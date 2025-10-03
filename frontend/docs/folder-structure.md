@@ -140,6 +140,12 @@ features/<feature>/
 ### `lib`
 
 - 放置跨 domain 的工具函式、常數、型別、錯誤映射。
+- 包含 `config.ts`：統一管理環境變數與應用配置，提供型別安全存取。
+- 包含 `api/` 子目錄：
+  - `api-client.ts`：HTTP 請求封裝與便利方法。
+  - `paths.ts`：API endpoint paths 常數管理。
+  - `api-error.ts`：API 錯誤處理。
+  - `types.ts`：API 相關型別定義。
 - 不得引用 `features`，維持依賴單向性。
 
 ### `styles`

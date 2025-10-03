@@ -1,0 +1,50 @@
+{
+  "app": {
+    "name": "HWDC 2025 MCP League"
+  },
+  "landing": {
+    "title": "Chat assistant powered by MCP tools",
+    "subtitle": "Enable MCP servers to experience tool-augmented workflows in seconds.",
+    "cta": "Start chatting",
+    "badge": "MCP Ready",
+    "protocol": "Model Context Protocol"
+  },
+  "chat": {
+    "title": "Conversation",
+    "emptyState": "No messages yet. Say hello to start the conversation.",
+    "inputPlaceholder": "Type your message...",
+    "send": "Send",
+    "assistantLabel": "Assistant",
+    "userLabel": "You",
+    "status": {
+      "pending": "Thinking",
+      "generating": "Assistant is crafting a reply...",
+      "streaming": "Streaming reply"
+    },
+    "error": {
+      "generic": "Something went wrong while sending. Please try again."
+    },
+    "model": {
+      "label": "Model",
+      "loading": "Loading models...",
+      "empty": "No models configured"
+    },
+    "streaming": {
+      "label": "Streaming",
+      "on": "On",
+      "off": "Off",
+      "unsupported": "Unsupported"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "mcpSection": "MCP Servers"
+  },
+  "localeSwitcher": {
+    "label": "Language",
+    "options": {
+      "zh-TW": "繁體中文",
+      "en": "English"
+    }
+  }
+}

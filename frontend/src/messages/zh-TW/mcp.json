@@ -1,0 +1,24 @@
+{
+  "servers": {
+    "sectionTitle": "已註冊伺服器",
+    "refresh": "重新整理",
+    "refreshing": "重新整理中…",
+    "initializing": "正在初始化 MCP 系統…",
+    "initialized": "共 {count} 台伺服器",
+    "traceLabel": "追蹤碼",
+    "status": {
+      "connected": "已連線",
+      "disconnected": "未連線"
+    },
+    "labels": {
+      "functions": "函式數",
+      "enabled": "啟用狀態",
+      "functionsList": "可用函式"
+    },
+    "enabled": {
+      "yes": "已啟用",
+      "no": "未啟用"
+    },
+    "empty": "目前沒有可用的 MCP 伺服器，請確認後端設定。"
+  }
+}
