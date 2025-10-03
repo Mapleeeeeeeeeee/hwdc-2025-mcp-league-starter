@@ -113,8 +113,10 @@ export function ChatShell({
   const [selectedTools, setSelectedTools] = useState<McpToolSelection[]>(
     defaultTools ?? [],
   );
+  const [historyIndex, setHistoryIndex] = useState(-1);
 
   const streamControllerRef = useRef<AbortController | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const mutation = useConversationMutation();
   const modelsQuery = useConversationModels();
@@ -304,6 +306,70 @@ export function ChatShell({
     setSelectedModelKey(value);
   }, []);
 
+  const handleKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      // Shift + Enter: 換行 (default behavior)
+      if (event.shiftKey && event.key === "Enter") {
+        return; // Let default behavior handle newline
+      }
+
+      // Enter without Shift: 提交
+      if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        if (!isBusy && inputValue.trim()) {
+          const form = event.currentTarget.form;
+          if (form) {
+            form.requestSubmit();
+          }
+        }
+        return;
+      }
+
+      // Arrow Up: 回到上一個用戶訊息
+      if (event.key === "ArrowUp" && !inputValue && !isBusy) {
+        event.preventDefault();
+        const userMessages = messages.filter((m) => m.role === "user");
+        if (userMessages.length === 0) return;
+
+        const newIndex =
+          historyIndex === -1
+            ? userMessages.length - 1
+            : Math.max(0, historyIndex - 1);
+
+        setHistoryIndex(newIndex);
+        setInputValue(userMessages[newIndex]?.content ?? "");
+        return;
+      }
+
+      // Arrow Down: 前往下一個訊息或清空
+      if (event.key === "ArrowDown" && historyIndex !== -1 && !isBusy) {
+        event.preventDefault();
+        const userMessages = messages.filter((m) => m.role === "user");
+
+        const newIndex = historyIndex + 1;
+        if (newIndex >= userMessages.length) {
+          setHistoryIndex(-1);
+          setInputValue("");
+        } else {
+          setHistoryIndex(newIndex);
+          setInputValue(userMessages[newIndex]?.content ?? "");
+        }
+      }
+    },
+    [historyIndex, inputValue, isBusy, messages],
+  );
+
+  const handleInputChange = useCallback(
+    (event: React.ChangeEvent<HTMLTextAreaElement>) => {
+      setInputValue(event.target.value);
+      // Reset history index when user types
+      if (historyIndex !== -1) {
+        setHistoryIndex(-1);
+      }
+    },
+    [historyIndex],
+  );
+
   return (
     <section className="flex flex-col gap-4 rounded-3xl border border-white/10 bg-white/5 p-6">
       <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -415,13 +481,26 @@ export function ChatShell({
       ) : null}
 
       <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
-        <div className="flex items-center gap-3 rounded-full border border-white/10 bg-white/5 px-4 py-2 shadow-[0_12px_30px_-20px_rgba(59,130,246,0.5)]">
-          <input
-            className="flex-1 bg-transparent text-sm text-white/90 placeholder:text-white/40 focus:outline-none"
+        <div className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 shadow-[0_12px_30px_-20px_rgba(59,130,246,0.5)]">
+          <textarea
+            ref={textareaRef}
+            className="flex-1 resize-none bg-transparent text-sm text-white/90 placeholder:text-white/40 focus:outline-none"
             placeholder={placeholder}
             value={inputValue}
-            onChange={(event) => setInputValue(event.target.value)}
+            onChange={handleInputChange}
+            onKeyDown={handleKeyDown}
             disabled={isBusy}
+            rows={1}
+            style={{
+              minHeight: "1.5rem",
+              maxHeight: "10rem",
+              height: "auto",
+            }}
+            onInput={(e) => {
+              const target = e.target as HTMLTextAreaElement;
+              target.style.height = "auto";
+              target.style.height = `${target.scrollHeight}px`;
+            }}
           />
           <button
             type="submit"
