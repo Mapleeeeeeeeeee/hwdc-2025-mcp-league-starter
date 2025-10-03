@@ -52,16 +52,24 @@ RUN pnpm build
 # ================================
 # Stage 3: Runtime - Multi-service
 # ================================
-FROM nginx:alpine
+FROM nginx:bookworm
 
-# Install Python 3.12 and Node.js 20
-RUN apk add --no-cache \
+# Set shell options for better error handling
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
+# Install Python 3.12, Node.js 20, and required system libraries
+RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
-    py3-pip \
-    nodejs \
-    npm \
+    python3-pip \
+    curl \
+    ca-certificates \
+    gnupg \
+    libsecret-1-0 \
     supervisor \
-    curl
+    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y --no-install-recommends nodejs \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install uv in runtime
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv

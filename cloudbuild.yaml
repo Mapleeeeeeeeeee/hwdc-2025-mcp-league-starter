@@ -49,6 +49,12 @@ steps:
       - '8080'
       - '--set-env-vars'
       - 'ENVIRONMENT=production,HOST=0.0.0.0,PORT=8000,LOG_LEVEL=INFO,ENABLE_MCP_SYSTEM=true'
+      - '--update-env-vars'
+      - 'OPENAI_API_KEY=${_OPENAI_API_KEY}'
+
+# Substitution variables (set these when triggering the build)
+substitutions:
+  _OPENAI_API_KEY: ''
 
 # Build timeout
 timeout: 2400s
