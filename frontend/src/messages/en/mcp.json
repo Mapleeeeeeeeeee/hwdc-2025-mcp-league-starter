@@ -3,6 +3,12 @@
     "sectionTitle": "Registered Servers",
     "refresh": "Refresh",
     "refreshing": "Refreshing…",
+    "reload": "Reload",
+    "reloading": "Reloading…",
+    "reloadAll": "Reload All",
+    "reloadAllSuccess": "All servers reloaded successfully",
+    "reloadSuccess": "Server '{serverName}' reloaded successfully",
+    "reloadError": "Failed to reload server",
     "initializing": "Initialising MCP system…",
     "initialized": "{count} server(s)",
     "traceLabel": "Trace ID",
@@ -20,5 +26,17 @@
       "no": "Disabled"
     },
     "empty": "No MCP servers available yet. Check the backend configuration."
+  },
+  "tools": {
+    "sectionTitle": "Tool Selection",
+    "selectServers": "Select MCP Servers",
+    "selectFunctions": "Select Functions",
+    "allFunctions": "All Functions",
+    "noServersSelected": "No servers selected",
+    "selectedCount": "{count} server(s) selected",
+    "enableAll": "Enable All",
+    "disableAll": "Disable All",
+    "apply": "Apply",
+    "cancel": "Cancel"
   }
 }

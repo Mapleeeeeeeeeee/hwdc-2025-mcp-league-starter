@@ -16,3 +16,17 @@ export type McpToolSelection = {
   server: string;
   functions?: string[];
 };
+
+export type ReloadMcpServerResponse = {
+  serverName: string;
+  success: boolean;
+  message?: string | null;
+  functionCount: number;
+};
+
+export type ReloadAllMcpServersResponse = {
+  success: boolean;
+  reloadedCount: number;
+  failedCount: number;
+  results: ReloadMcpServerResponse[];
+};
