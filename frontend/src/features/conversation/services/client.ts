@@ -36,6 +36,10 @@ export async function fetchConversationModels(): Promise<ListModelsResponse> {
   return apiClient.get<ListModelsResponse>(API_PATHS.CONVERSATION.MODELS);
 }
 
+export async function setActiveModel(modelKey: string): Promise<void> {
+  return apiClient.put<void>(API_PATHS.CONVERSATION.MODEL_BY_KEY(modelKey));
+}
+
 export function streamConversationRequest(
   payload: ConversationRequestInput,
   handlers: StreamEventHandlers = {},

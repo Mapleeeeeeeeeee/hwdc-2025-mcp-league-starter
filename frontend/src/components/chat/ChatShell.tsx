@@ -18,6 +18,7 @@ import {
   ConversationStreamChunk,
   streamConversationRequest,
   useConversationModels,
+  useSetActiveModel,
 } from "@/features/conversation";
 import { useConversationMutation } from "@/features/conversation";
 import { useFetchMcpServers } from "@/features/mcp";
@@ -121,6 +122,7 @@ export function ChatShell({
   const mutation = useConversationMutation();
   const modelsQuery = useConversationModels();
   const mcpServersQuery = useFetchMcpServers();
+  const setActiveModelMutation = useSetActiveModel();
 
   const models = modelsQuery.data.models;
 
@@ -370,6 +372,23 @@ export function ChatShell({
     [historyIndex],
   );
 
+  const handleSetAsDefault = useCallback(() => {
+    if (!selectedModelKey) return;
+
+    setActiveModelMutation.mutate(selectedModelKey, {
+      onSuccess: () => {
+        // Success feedback handled by cache update
+      },
+      onError: (error) => {
+        console.error("Failed to set active model:", error);
+        setFormError(tChat("model.setAsDefaultError"));
+      },
+    });
+  }, [selectedModelKey, setActiveModelMutation, tChat]);
+
+  const isCurrentModelDefault =
+    selectedModelKey === modelsQuery.data.activeModelKey;
+
   return (
     <section className="flex flex-col gap-4 rounded-3xl border border-white/10 bg-white/5 p-6">
       <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -414,10 +433,40 @@ export function ChatShell({
                   className="text-black"
                 >
                   {`${model.key} · ${model.modelId}`}
+                  {model.key === modelsQuery.data.activeModelKey
+                    ? ` ${tChat("model.isDefault")}`
+                    : ""}
                 </option>
               ))}
             </select>
           </label>
+
+          {selectedModelKey && !isCurrentModelDefault && (
+            <button
+              type="button"
+              onClick={handleSetAsDefault}
+              disabled={setActiveModelMutation.isPending}
+              className="flex items-center gap-2 rounded-full border border-blue-400/30 bg-blue-400/10 px-3 py-1 text-xs text-blue-300 transition hover:bg-blue-400/20 disabled:cursor-not-allowed disabled:opacity-50"
+              title={tChat("model.setAsDefault")}
+            >
+              <svg
+                className="size-3.5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+              <span className="font-semibold uppercase tracking-[0.3em]">
+                {tChat("model.setAsDefault")}
+              </span>
+            </button>
+          )}
 
           <button
             type="button"
