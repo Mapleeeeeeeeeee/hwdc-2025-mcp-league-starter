@@ -11,6 +11,8 @@ const nextConfig: NextConfig = {
   typedRoutes: true,
   // Fix workspace root detection warning for monorepo
   outputFileTracingRoot: path.join(__dirname, "../"),
+  // Enable standalone output for Docker deployment
+  output: "standalone",
 };
 
 export default withNextIntl(nextConfig);

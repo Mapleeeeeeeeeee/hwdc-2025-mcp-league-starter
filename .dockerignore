@@ -1,0 +1,74 @@
+# Build context exclusions
+.git/
+.github/
+.gitignore
+.editorconfig
+.pre-commit-config.yaml
+
+# Documentation
+*.md
+!DEPLOYMENT.md
+docs/
+PR.md
+CHANGELOG.md
+CONTRIBUTING.md
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Node.js
+node_modules/
+.next/
+out/
+.turbo/
+*.tsbuildinfo
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Test coverage
+coverage/
+.coverage
+htmlcov/
+.nyc_output/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Lock files (will be copied separately in Dockerfile)
+# We keep them commented to ensure they're available for dependency installation
+# pnpm-lock.yaml
+# uv.lock
