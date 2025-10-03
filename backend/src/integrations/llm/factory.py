@@ -29,11 +29,7 @@ class ConversationAgentFactory:
         model = build_model(config, overrides or {})
         metadata = config.metadata or {}
         agent = Agent(
-            session_id=session_id,
-            name=metadata.get("name", config.key),
-            description=metadata.get("description"),
             model=model,
-            markdown=True,
             debug_mode=bool(metadata.get("debug", False)),
         )
         return agent

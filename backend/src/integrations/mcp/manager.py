@@ -12,6 +12,13 @@ from typing import Any
 from agno.tools.mcp import MCPTools
 
 from src.core.logging import get_logger
+from src.models import ReloadAllMCPServersResponse, ReloadMCPServerResponse
+from src.shared.exceptions import (
+    MCPNoServersAvailableError,
+    MCPServerDisabledError,
+    MCPServerNotFoundError,
+    MCPServerReloadError,
+)
 
 from .server_params import MCPParamsManager, MCPServerParams
 from .toolkit import MCPToolkit
@@ -273,6 +280,151 @@ class MCPManager:
             "available_servers": self.get_available_servers(),
         }
 
+    async def reload_server(self, server_name: str) -> ReloadMCPServerResponse:
+        """Reload a specific MCP server by name."""
+        logger.info("Reloading MCP server '%s'", server_name)
+
+        async with self._lock:
+            # Reload configurations from file to pick up any changes
+            fresh_configs = [
+                cfg
+                for cfg in self._params_manager.get_default_params()
+                if self._params_manager.validate_config(cfg)
+            ]
+            self._configs = fresh_configs
+
+            # Find the server config
+            config = None
+            for cfg in self._configs:
+                if cfg.name == server_name:
+                    config = cfg
+                    break
+
+            if config is None:
+                logger.warning("Server '%s' not found in configuration", server_name)
+                raise MCPServerNotFoundError(server_name)
+
+            if not config.enabled:
+                logger.warning("Server '%s' is disabled in configuration", server_name)
+                raise MCPServerDisabledError(server_name)
+
+            # Close existing connection if any
+            if server_name in self._servers:
+                await self._close_server(server_name)
+
+            # Reinitialize the server
+            try:
+                await self._initialise_single_server(config)
+                function_count = self._get_server_function_count(server_name)
+                logger.info(
+                    "Server '%s' reloaded successfully with %s functions",
+                    server_name,
+                    function_count,
+                )
+                return ReloadMCPServerResponse(
+                    server_name=server_name,
+                    success=True,
+                    message="Server reloaded successfully",
+                    function_count=function_count,
+                )
+            except Exception as exc:
+                logger.error("Failed to reload server '%s': %s", server_name, exc)
+                raise MCPServerReloadError(server_name, reason=str(exc)) from exc
+
+    async def reload_all_servers(self) -> ReloadAllMCPServersResponse:
+        """Reload all enabled MCP servers."""
+        logger.info("Reloading all MCP servers")
+
+        async with self._lock:
+            # Reload configurations from file to pick up any changes
+            fresh_configs = [
+                cfg
+                for cfg in self._params_manager.get_default_params()
+                if self._params_manager.validate_config(cfg)
+            ]
+            self._configs = fresh_configs
+
+            enabled_configs = [config for config in self._configs if config.enabled]
+
+            if not enabled_configs:
+                logger.warning("No enabled servers to reload")
+                raise MCPNoServersAvailableError()
+
+            # Close all existing connections
+            for server_name in list(self._servers.keys()):
+                await self._close_server(server_name)
+
+            # Reinitialize all enabled servers
+            results: list[ReloadMCPServerResponse] = []
+            success_count = 0
+            failed_count = 0
+
+            for config in enabled_configs:
+                try:
+                    await self._initialise_single_server(config)
+                    function_count = self._get_server_function_count(config.name)
+                    results.append(
+                        ReloadMCPServerResponse(
+                            server_name=config.name,
+                            success=True,
+                            message="Server reloaded successfully",
+                            function_count=function_count,
+                        )
+                    )
+                    success_count += 1
+                except Exception as exc:
+                    logger.error("Failed to reload server '%s': %s", config.name, exc)
+                    results.append(
+                        ReloadMCPServerResponse(
+                            server_name=config.name,
+                            success=False,
+                            message=f"Failed to reload: {exc!s}",
+                            function_count=0,
+                        )
+                    )
+                    failed_count += 1
+
+            logger.info(
+                "Reload complete: %s/%s servers successful",
+                success_count,
+                len(enabled_configs),
+            )
+
+            return ReloadAllMCPServersResponse(
+                success=success_count > 0,
+                reloaded_count=success_count,
+                failed_count=failed_count,
+                results=results,
+            )
+
+    async def _close_server(self, server_name: str) -> None:
+        """Close a specific MCP server connection."""
+        tools = self._servers.get(server_name)
+        if tools is None:
+            return
+
+        try:
+            logger.info("Closing MCP server '%s'", server_name)
+            if hasattr(tools, "__aexit__"):
+                await tools.__aexit__(None, None, None)
+            elif hasattr(tools, "close") and callable(tools.close):
+                result = tools.close()
+                if asyncio.iscoroutine(result):
+                    await result
+            else:  # pragma: no cover - safety fallback
+                logger.debug(
+                    "MCP server '%s' exposes no async close handler",
+                    server_name,
+                )
+        except Exception as exc:  # pragma: no cover - defensive logging
+            logger.warning(
+                "Error while closing MCP server '%s': %s",
+                server_name,
+                exc,
+            )
+        finally:
+            self._servers.pop(server_name, None)
+
     async def shutdown(self) -> None:
         """Close all active MCP tool connections and reset state."""
         logger.info("Commencing MCP manager shutdown")
@@ -284,20 +436,9 @@ class MCPManager:
         async with self._lock:
             shutdown_errors: list[str] = []
 
-            for server_name, tools in list(self._servers.items()):
+            for server_name in list(self._servers.keys()):
                 try:
-                    logger.info("Closing MCP server '%s'", server_name)
-                    if hasattr(tools, "__aexit__"):
-                        await tools.__aexit__(None, None, None)
-                    elif hasattr(tools, "close") and callable(tools.close):
-                        result = tools.close()
-                        if asyncio.iscoroutine(result):
-                            await result
-                    else:  # pragma: no cover - safety fallback
-                        logger.debug(
-                            "MCP server '%s' exposes no async close handler",
-                            server_name,
-                        )
+                    await self._close_server(server_name)
                 except Exception as exc:  # pragma: no cover - defensive logging
                     message = f"Error while cleaning MCP server '{server_name}': {exc}"
                     logger.warning(message)
@@ -347,3 +488,13 @@ def get_mcp_toolkit(
     return MCPManager().get_toolkit_for_server(
         server_name, allowed_functions=allowed_functions
     )
+
+
+async def reload_mcp_server(server_name: str) -> ReloadMCPServerResponse:
+    """Reload a specific MCP server."""
+    return await MCPManager().reload_server(server_name)
+
+
+async def reload_all_mcp_servers() -> ReloadAllMCPServersResponse:
+    """Reload all enabled MCP servers."""
+    return await MCPManager().reload_all_servers()

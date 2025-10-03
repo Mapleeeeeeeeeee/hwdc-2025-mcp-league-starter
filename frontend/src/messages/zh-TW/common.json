@@ -27,7 +27,11 @@
     "model": {
       "label": "模型",
       "loading": "載入模型中...",
-      "empty": "尚未設定模型"
+      "empty": "尚未設定模型",
+      "setAsDefault": "設為預設",
+      "setAsDefaultSuccess": "預設模型已更新",
+      "setAsDefaultError": "更新預設模型失敗",
+      "isDefault": "(預設)"
     },
     "streaming": {
       "label": "串流回覆",

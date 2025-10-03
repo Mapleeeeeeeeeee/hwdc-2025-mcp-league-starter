@@ -3,22 +3,40 @@
     "sectionTitle": "已註冊伺服器",
     "refresh": "重新整理",
     "refreshing": "重新整理中…",
+    "reload": "重新載入",
+    "reloading": "重新載入中…",
+    "reloadAll": "全部重載",
+    "reloadAllSuccess": "所有伺服器已成功重載",
+    "reloadSuccess": "伺服器 '{serverName}' 已成功重載",
+    "reloadError": "重載伺服器失敗",
     "initializing": "正在初始化 MCP 系統…",
-    "initialized": "共 {count} 台伺服器",
-    "traceLabel": "追蹤碼",
+    "initialized": "{count} 個伺服器",
+    "traceLabel": "追蹤 ID",
     "status": {
       "connected": "已連線",
       "disconnected": "未連線"
     },
     "labels": {
-      "functions": "函式數",
+      "functions": "函數",
       "enabled": "啟用狀態",
-      "functionsList": "可用函式"
+      "functionsList": "可用函數"
     },
     "enabled": {
       "yes": "已啟用",
-      "no": "未啟用"
+      "no": "已停用"
     },
-    "empty": "目前沒有可用的 MCP 伺服器，請確認後端設定。"
+    "empty": "尚無可用的 MCP 伺服器。請檢查後端配置。"
+  },
+  "tools": {
+    "sectionTitle": "工具選擇",
+    "selectServers": "選擇 MCP 伺服器",
+    "selectFunctions": "選擇函數",
+    "allFunctions": "所有函數",
+    "noServersSelected": "未選擇伺服器",
+    "selectedCount": "已選擇 {count} 個伺服器",
+    "enableAll": "啟用全部",
+    "disableAll": "停用全部",
+    "apply": "套用",
+    "cancel": "取消"
   }
 }

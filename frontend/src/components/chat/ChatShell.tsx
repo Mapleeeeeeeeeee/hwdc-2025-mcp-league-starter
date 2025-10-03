@@ -18,10 +18,13 @@ import {
   ConversationStreamChunk,
   streamConversationRequest,
   useConversationModels,
+  useSetActiveModel,
 } from "@/features/conversation";
 import { useConversationMutation } from "@/features/conversation";
-
+import { useFetchMcpServers } from "@/features/mcp";
 import type { McpToolSelection } from "@/features/mcp";
+import { ToolSelector } from "@/components/mcp/ToolSelector";
+import { MessageContent } from "./MessageContent";
 
 type Translator = (
   key: string,
@@ -108,11 +111,18 @@ export function ChatShell({
   const [selectedModelKey, setSelectedModelKey] = useState<string | undefined>(
     modelKey,
   );
+  const [selectedTools, setSelectedTools] = useState<McpToolSelection[]>(
+    defaultTools ?? [],
+  );
+  const [historyIndex, setHistoryIndex] = useState(-1);
 
   const streamControllerRef = useRef<AbortController | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const mutation = useConversationMutation();
   const modelsQuery = useConversationModels();
+  const mcpServersQuery = useFetchMcpServers();
+  const setActiveModelMutation = useSetActiveModel();
 
   const models = modelsQuery.data.models;
 
@@ -193,7 +203,7 @@ export function ChatShell({
         history,
         userId,
         modelKey: selectedModelKey,
-        tools: defaultTools,
+        tools: selectedTools.length > 0 ? selectedTools : undefined,
       };
 
       const shouldStream = isStreamingEnabled && supportsStreaming;
@@ -298,6 +308,87 @@ export function ChatShell({
     setSelectedModelKey(value);
   }, []);
 
+  const handleKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      // Shift + Enter: 換行 (default behavior)
+      if (event.shiftKey && event.key === "Enter") {
+        return; // Let default behavior handle newline
+      }
+
+      // Enter without Shift: 提交
+      if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        if (!isBusy && inputValue.trim()) {
+          const form = event.currentTarget.form;
+          if (form) {
+            form.requestSubmit();
+          }
+        }
+        return;
+      }
+
+      // Arrow Up: 回到上一個用戶訊息
+      if (event.key === "ArrowUp" && !inputValue && !isBusy) {
+        event.preventDefault();
+        const userMessages = messages.filter((m) => m.role === "user");
+        if (userMessages.length === 0) return;
+
+        const newIndex =
+          historyIndex === -1
+            ? userMessages.length - 1
+            : Math.max(0, historyIndex - 1);
+
+        setHistoryIndex(newIndex);
+        setInputValue(userMessages[newIndex]?.content ?? "");
+        return;
+      }
+
+      // Arrow Down: 前往下一個訊息或清空
+      if (event.key === "ArrowDown" && historyIndex !== -1 && !isBusy) {
+        event.preventDefault();
+        const userMessages = messages.filter((m) => m.role === "user");
+
+        const newIndex = historyIndex + 1;
+        if (newIndex >= userMessages.length) {
+          setHistoryIndex(-1);
+          setInputValue("");
+        } else {
+          setHistoryIndex(newIndex);
+          setInputValue(userMessages[newIndex]?.content ?? "");
+        }
+      }
+    },
+    [historyIndex, inputValue, isBusy, messages],
+  );
+
+  const handleInputChange = useCallback(
+    (event: React.ChangeEvent<HTMLTextAreaElement>) => {
+      setInputValue(event.target.value);
+      // Reset history index when user types
+      if (historyIndex !== -1) {
+        setHistoryIndex(-1);
+      }
+    },
+    [historyIndex],
+  );
+
+  const handleSetAsDefault = useCallback(() => {
+    if (!selectedModelKey) return;
+
+    setActiveModelMutation.mutate(selectedModelKey, {
+      onSuccess: () => {
+        // Success feedback handled by cache update
+      },
+      onError: (error) => {
+        console.error("Failed to set active model:", error);
+        setFormError(tChat("model.setAsDefaultError"));
+      },
+    });
+  }, [selectedModelKey, setActiveModelMutation, tChat]);
+
+  const isCurrentModelDefault =
+    selectedModelKey === modelsQuery.data.activeModelKey;
+
   return (
     <section className="flex flex-col gap-4 rounded-3xl border border-white/10 bg-white/5 p-6">
       <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -342,10 +433,40 @@ export function ChatShell({
                   className="text-black"
                 >
                   {`${model.key} · ${model.modelId}`}
+                  {model.key === modelsQuery.data.activeModelKey
+                    ? ` ${tChat("model.isDefault")}`
+                    : ""}
                 </option>
               ))}
             </select>
           </label>
+
+          {selectedModelKey && !isCurrentModelDefault && (
+            <button
+              type="button"
+              onClick={handleSetAsDefault}
+              disabled={setActiveModelMutation.isPending}
+              className="flex items-center gap-2 rounded-full border border-blue-400/30 bg-blue-400/10 px-3 py-1 text-xs text-blue-300 transition hover:bg-blue-400/20 disabled:cursor-not-allowed disabled:opacity-50"
+              title={tChat("model.setAsDefault")}
+            >
+              <svg
+                className="size-3.5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+              <span className="font-semibold uppercase tracking-[0.3em]">
+                {tChat("model.setAsDefault")}
+              </span>
+            </button>
+          )}
 
           <button
             type="button"
@@ -379,7 +500,7 @@ export function ChatShell({
                   ? tChat("userLabel")
                   : tChat("assistantLabel")}
               </span>
-              <p>{message.content}</p>
+              <MessageContent content={message.content} role={message.role} />
             </article>
           ))
         ) : (
@@ -400,14 +521,35 @@ export function ChatShell({
         ) : null}
       </div>
 
+      {mcpServersQuery.data?.servers ? (
+        <ToolSelector
+          servers={mcpServersQuery.data.servers}
+          value={selectedTools}
+          onChange={setSelectedTools}
+        />
+      ) : null}
+
       <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
-        <div className="flex items-center gap-3 rounded-full border border-white/10 bg-white/5 px-4 py-2 shadow-[0_12px_30px_-20px_rgba(59,130,246,0.5)]">
-          <input
-            className="flex-1 bg-transparent text-sm text-white/90 placeholder:text-white/40 focus:outline-none"
+        <div className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 shadow-[0_12px_30px_-20px_rgba(59,130,246,0.5)]">
+          <textarea
+            ref={textareaRef}
+            className="flex-1 resize-none bg-transparent text-sm text-white/90 placeholder:text-white/40 focus:outline-none"
             placeholder={placeholder}
             value={inputValue}
-            onChange={(event) => setInputValue(event.target.value)}
+            onChange={handleInputChange}
+            onKeyDown={handleKeyDown}
             disabled={isBusy}
+            rows={1}
+            style={{
+              minHeight: "1.5rem",
+              maxHeight: "10rem",
+              height: "auto",
+            }}
+            onInput={(e) => {
+              const target = e.target as HTMLTextAreaElement;
+              target.style.height = "auto";
+              target.style.height = `${target.scrollHeight}px`;
+            }}
           />
           <button
             type="submit"

@@ -16,6 +16,9 @@ export const API_PATHS = {
   // MCP endpoints
   MCP: {
     SERVERS: "/api/v1/mcp/servers",
+    RELOAD_ALL_SERVERS: "/api/v1/mcp/servers:reload",
+    RELOAD_SERVER: (serverName: string) =>
+      `/api/v1/mcp/servers/${serverName}:reload`,
   },
 } as const;
 

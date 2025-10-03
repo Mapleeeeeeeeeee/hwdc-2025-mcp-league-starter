@@ -27,7 +27,11 @@
     "model": {
       "label": "Model",
       "loading": "Loading models...",
-      "empty": "No models configured"
+      "empty": "No models configured",
+      "setAsDefault": "Set as Default",
+      "setAsDefaultSuccess": "Default model updated successfully",
+      "setAsDefaultError": "Failed to update default model",
+      "isDefault": "(Default)"
     },
     "streaming": {
       "label": "Streaming",

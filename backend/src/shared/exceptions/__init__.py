@@ -8,6 +8,12 @@ from .llm import (
     LLMProviderNotConfiguredError,
     LLMProviderUnsupportedError,
 )
+from .mcp import (
+    MCPNoServersAvailableError,
+    MCPServerDisabledError,
+    MCPServerNotFoundError,
+    MCPServerReloadError,
+)
 from .permission import (
     AuthenticationRequiredError,
     PermissionDeniedError,
@@ -42,6 +48,11 @@ __all__ = [
     # LLM provider exceptions
     "LLMProviderNotConfiguredError",
     "LLMProviderUnsupportedError",
+    # MCP server exceptions
+    "MCPServerNotFoundError",
+    "MCPServerDisabledError",
+    "MCPServerReloadError",
+    "MCPNoServersAvailableError",
     # Permission & Authorization exceptions
     "PermissionDeniedError",
     "AuthenticationRequiredError",

@@ -106,7 +106,13 @@ class ConversationUsecase:
         selections: list[MCPToolSelection] | None,
     ) -> None:
         if not selections:
+            self._logger.info("No MCP tools selected for this conversation")
             return
+
+        self._logger.info(
+            "Attaching MCP tools to agent: %s server(s) selected",
+            len(selections),
+        )
 
         seen: set[str] = set()
         for selection in selections:
@@ -127,10 +133,17 @@ class ConversationUsecase:
                 allowed_functions=functions,
             )
             if toolkit is None or not toolkit.functions:
-                self._logger.debug(
+                self._logger.warning(
                     "Skipping MCP server '%s' – toolkit unavailable or empty",
                     server_name,
                 )
                 continue
 
+            function_names = list(toolkit.functions.keys())
+            self._logger.info(
+                "Adding MCP server '%s' with %s function(s): %s",
+                server_name,
+                len(function_names),
+                ", ".join(function_names) if functions else "all functions",
+            )
             agent.add_tool(toolkit)

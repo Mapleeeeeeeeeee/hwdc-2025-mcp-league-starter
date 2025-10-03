@@ -2,7 +2,11 @@
 
 import { useTranslations } from "next-intl";
 
-import { useFetchMcpServers } from "@/features/mcp";
+import {
+  useFetchMcpServers,
+  useReloadAllMcpServers,
+  useReloadMcpServer,
+} from "@/features/mcp";
 import type { McpServersSnapshot } from "@/features/mcp";
 import { ApiError } from "@/lib/api/api-error";
 
@@ -16,6 +20,19 @@ export function ServerOverview({ initialData }: ServerOverviewProps) {
 
   const { data, isLoading, isFetching, isError, error, refresh } =
     useFetchMcpServers({ initialData });
+
+  const {
+    reload: reloadAll,
+    isPending: isReloadingAll,
+    isError: isReloadAllError,
+    error: reloadAllError,
+  } = useReloadAllMcpServers();
+
+  const {
+    reload: reloadServer,
+    isPending: isReloadingServer,
+    variables: reloadingServerName,
+  } = useReloadMcpServer();
 
   const servers = data?.servers ?? [];
   const initialized = data?.initialized ?? false;
@@ -56,17 +73,41 @@ export function ServerOverview({ initialData }: ServerOverviewProps) {
               : t("initializing")}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => void refresh()}
-          disabled={isFetching}
-          className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-sm font-medium text-white/80 transition hover:bg-white/10 disabled:pointer-events-none disabled:opacity-50"
-        >
-          <span
-            className={`size-1.5 rounded-full ${isFetching ? "animate-pulse bg-emerald-300" : "bg-emerald-400/80"}`}
-          />
-          {isFetching ? t("refreshing") : t("refresh")}
-        </button>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => void refresh()}
+            disabled={isFetching}
+            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-sm font-medium text-white/80 transition hover:bg-white/10 disabled:pointer-events-none disabled:opacity-50"
+          >
+            <span
+              className={`size-1.5 rounded-full ${isFetching ? "animate-pulse bg-emerald-300" : "bg-emerald-400/80"}`}
+            />
+            {isFetching ? t("refreshing") : t("refresh")}
+          </button>
+          <button
+            type="button"
+            onClick={() => void reloadAll()}
+            disabled={isReloadingAll || isFetching}
+            className="inline-flex items-center gap-2 rounded-full border border-orange-500/20 bg-orange-500/10 px-3 py-1.5 text-sm font-medium text-orange-300 transition hover:bg-orange-500/20 disabled:pointer-events-none disabled:opacity-50"
+          >
+            <svg
+              className={`size-4 ${isReloadingAll ? "animate-spin" : ""}`}
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+              />
+            </svg>
+            {isReloadingAll ? t("reloading") : t("reloadAll")}
+          </button>
+        </div>
       </header>
 
       {isError ? (
@@ -75,6 +116,17 @@ export function ServerOverview({ initialData }: ServerOverviewProps) {
           {error instanceof ApiError && error.traceId ? (
             <span className="ml-2 text-xs text-red-200/70">
               {t("traceLabel")}: {error.traceId}
+            </span>
+          ) : null}
+        </div>
+      ) : null}
+
+      {isReloadAllError && reloadAllError ? (
+        <div className="rounded-lg border border-orange-500/40 bg-orange-500/10 px-4 py-3 text-sm text-orange-100">
+          {t("reloadError")}
+          {reloadAllError instanceof ApiError && reloadAllError.traceId ? (
+            <span className="ml-2 text-xs text-orange-200/70">
+              {t("traceLabel")}: {reloadAllError.traceId}
             </span>
           ) : null}
         </div>
@@ -91,69 +143,100 @@ export function ServerOverview({ initialData }: ServerOverviewProps) {
         </ul>
       ) : (
         <ul className="grid gap-3 md:grid-cols-2">
-          {servers.map((server) => (
-            <li
-              key={server.name}
-              className="rounded-xl border border-white/10 bg-white/5 p-4"
-            >
-              <div className="flex items-center justify-between gap-2">
-                <div>
-                  <p className="text-sm font-medium text-white/90">
-                    {server.name}
-                  </p>
-                  {server.description ? (
-                    <p className="text-xs text-white/40">
-                      {server.description}
-                    </p>
-                  ) : null}
-                </div>
-                <span
-                  className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${server.connected ? "bg-emerald-400/10 text-emerald-300" : "bg-orange-400/10 text-orange-200"}`}
-                >
-                  <span className="size-1.5 rounded-full bg-current" />
-                  {server.connected
-                    ? t("status.connected")
-                    : t("status.disconnected")}
-                </span>
-              </div>
-              <dl className="mt-3 grid grid-cols-2 gap-2 text-xs text-white/50">
-                <div>
-                  <dt className="uppercase tracking-[0.2em] text-white/40">
-                    {t("labels.functions")}
-                  </dt>
-                  <dd className="text-base font-semibold text-white">
-                    {server.functionCount}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="uppercase tracking-[0.2em] text-white/40">
-                    {t("labels.enabled")}
-                  </dt>
-                  <dd className="text-base font-semibold text-white">
-                    {server.enabled ? t("enabled.yes") : t("enabled.no")}
-                  </dd>
-                </div>
-              </dl>
+          {servers.map((server) => {
+            const isThisServerReloading =
+              isReloadingServer && reloadingServerName === server.name;
 
-              {server.functions.length > 0 ? (
-                <div className="mt-3 border-t border-white/10 pt-3 text-xs text-white/60">
-                  <p className="mb-1 font-semibold uppercase tracking-[0.2em] text-white/30">
-                    {t("labels.functionsList")}
-                  </p>
-                  <ul className="flex flex-wrap gap-1">
-                    {server.functions.map((fn) => (
-                      <li
-                        key={`${server.name}-${fn}`}
-                        className="rounded-full border border-white/10 bg-white/10 px-2 py-0.5 text-[11px]"
+            return (
+              <li
+                key={server.name}
+                className="rounded-xl border border-white/10 bg-white/5 p-4"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-white/90">
+                      {server.name}
+                    </p>
+                    {server.description ? (
+                      <p className="text-xs text-white/40">
+                        {server.description}
+                      </p>
+                    ) : null}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${server.connected ? "bg-emerald-400/10 text-emerald-300" : "bg-orange-400/10 text-orange-200"}`}
+                    >
+                      <span className="size-1.5 rounded-full bg-current" />
+                      {server.connected
+                        ? t("status.connected")
+                        : t("status.disconnected")}
+                    </span>
+                    {server.enabled ? (
+                      <button
+                        type="button"
+                        onClick={() => void reloadServer(server.name)}
+                        disabled={isReloadingServer || isFetching}
+                        className="rounded-md border border-white/10 bg-white/5 p-1.5 text-white/70 transition hover:bg-white/10 disabled:pointer-events-none disabled:opacity-50"
+                        title={t("reload")}
                       >
-                        {fn}
-                      </li>
-                    ))}
-                  </ul>
+                        <svg
+                          className={`size-3.5 ${isThisServerReloading ? "animate-spin" : ""}`}
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                          />
+                        </svg>
+                      </button>
+                    ) : null}
+                  </div>
                 </div>
-              ) : null}
-            </li>
-          ))}
+                <dl className="mt-3 grid grid-cols-2 gap-2 text-xs text-white/50">
+                  <div>
+                    <dt className="uppercase tracking-[0.2em] text-white/40">
+                      {t("labels.functions")}
+                    </dt>
+                    <dd className="text-base font-semibold text-white">
+                      {server.functionCount}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="uppercase tracking-[0.2em] text-white/40">
+                      {t("labels.enabled")}
+                    </dt>
+                    <dd className="text-base font-semibold text-white">
+                      {server.enabled ? t("enabled.yes") : t("enabled.no")}
+                    </dd>
+                  </div>
+                </dl>
+
+                {server.functions.length > 0 ? (
+                  <div className="mt-3 border-t border-white/10 pt-3 text-xs text-white/60">
+                    <p className="mb-1 font-semibold uppercase tracking-[0.2em] text-white/30">
+                      {t("labels.functionsList")}
+                    </p>
+                    <ul className="flex flex-wrap gap-1">
+                      {server.functions.map((fn) => (
+                        <li
+                          key={`${server.name}-${fn}`}
+                          className="rounded-full border border-white/10 bg-white/10 px-2 py-0.5 text-[11px]"
+                        >
+                          {fn}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+              </li>
+            );
+          })}
 
           {servers.length === 0 && !isLoading ? (
             <li className="rounded-xl border border-dashed border-white/20 bg-white/5 p-6 text-sm text-white/60">
