@@ -285,6 +285,14 @@ class MCPManager:
         logger.info("Reloading MCP server '%s'", server_name)
 
         async with self._lock:
+            # Reload configurations from file to pick up any changes
+            fresh_configs = [
+                cfg
+                for cfg in self._params_manager.get_default_params()
+                if self._params_manager.validate_config(cfg)
+            ]
+            self._configs = fresh_configs
+
             # Find the server config
             config = None
             for cfg in self._configs:
@@ -328,6 +336,14 @@ class MCPManager:
         logger.info("Reloading all MCP servers")
 
         async with self._lock:
+            # Reload configurations from file to pick up any changes
+            fresh_configs = [
+                cfg
+                for cfg in self._params_manager.get_default_params()
+                if self._params_manager.validate_config(cfg)
+            ]
+            self._configs = fresh_configs
+
             enabled_configs = [config for config in self._configs if config.enabled]
 
             if not enabled_configs:
