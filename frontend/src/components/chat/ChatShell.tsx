@@ -23,6 +23,7 @@ import { useConversationMutation } from "@/features/conversation";
 import { useFetchMcpServers } from "@/features/mcp";
 import type { McpToolSelection } from "@/features/mcp";
 import { ToolSelector } from "@/components/mcp/ToolSelector";
+import { MessageContent } from "./MessageContent";
 
 type Translator = (
   key: string,
@@ -384,7 +385,7 @@ export function ChatShell({
                   ? tChat("userLabel")
                   : tChat("assistantLabel")}
               </span>
-              <p>{message.content}</p>
+              <MessageContent content={message.content} role={message.role} />
             </article>
           ))
         ) : (
