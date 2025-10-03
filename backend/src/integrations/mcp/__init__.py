@@ -10,6 +10,8 @@ from .manager import (
     graceful_mcp_cleanup,
     initialize_mcp_system,
     is_mcp_initialized,
+    reload_all_mcp_servers,
+    reload_mcp_server,
 )
 from .server_params import (
     MCPParamsManager,
@@ -33,4 +35,6 @@ __all__ = [
     "get_available_mcp_servers",
     "get_mcp_server_functions",
     "get_mcp_toolkit",
+    "reload_mcp_server",
+    "reload_all_mcp_servers",
 ]
