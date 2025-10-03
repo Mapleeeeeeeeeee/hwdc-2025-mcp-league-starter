@@ -72,7 +72,10 @@ conftest.py
   - `repo/`：Repository ↔ DB（migration/seed + 操作 + 交易驗證）。
   - `external/`：對外 HTTP/SDK 的 CDC 或故障注入。
   - `contract/`：OpenAPI schema snapshot/diff 與錯誤包 snapshot。
-- 測試函式命名：`test_<行為>__<情境>__<預期>` 例：`test_list_roles__authorized__returns_200_and_schema_ok`（與 unit-testing 命名規則對齊）。
+- **測試函式命名**：`test_<function_name>_with_<scenario>_expects_<expected_result>`
+  - 例：`test_list_roles_with_authorized_user_expects_200_and_valid_schema`
+  - 例：`test_create_conversation_with_invalid_tools_expects_400_error`
+  - 例：`test_reload_server_with_updated_config_expects_new_settings_applied`
 
 ## 依賴與環境啟動策略
 

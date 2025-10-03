@@ -59,8 +59,13 @@ conftest.py
 
 - **檔名**：`test_<subject>.py`（例：`test_create_order_usecase.py`、`test_price_rules.py`）
 - **類別**：`Test<Subject>`（例：`TestCreateOrderUseCase`）
-- **測試方法**：`test_<行為>__<情境>__<預期>`
-  例：`test_calc_discount__vip_customer__applies_highest_rule`
+- **測試方法**：`test_<function_name>_with_<scenario>_expects_<expected_result>`
+  - `<function_name>`：被測試的函數名稱（snake_case）
+  - `<scenario>`：測試情境描述（可選，多個情境用 `and` 連接）
+  - `<expected_result>`：預期結果描述
+  - 例：`test_calc_discount_with_vip_customer_expects_highest_rule`
+  - 例：`test_create_order_with_invalid_quantity_expects_validation_error`
+  - 例：`test_reload_server_with_nonexistent_server_expects_not_found_error`
 - **夾具（fixtures）**：集中於 `tests/unit/conftest.py`，避免重複樣板
 
 ## Test Double 規範
@@ -124,7 +129,7 @@ class StubUserRepository:
 
 # 2. 撰寫測試
 @pytest.mark.asyncio
-async def test_get_user__user_exists__returns_user_dict():
+async def test_get_user_with_existing_user_expects_user_dict():
     # Arrange: 準備假資料和 Stub Repo
     fake_user = {"id": "user-123", "name": "Ada", "email": "ada@example.com"}
     fake_role = {"id": "role-456", "name": "Admin"}
@@ -157,7 +162,7 @@ from unittest.mock import AsyncMock  # 使用 AsyncMock 來模擬 async 方法
 from src.application.admin.user_service import AdminUserService
 
 @pytest.mark.asyncio
-async def test_get_user__user_exists__calls_repo_with_correct_id_and_email():
+async def test_get_user_with_existing_user_expects_correct_repo_calls():
     # Arrange: 準備 Mock 和返回值
     mock_repo = AsyncMock()
 
