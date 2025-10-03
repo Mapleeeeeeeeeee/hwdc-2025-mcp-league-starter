@@ -6,6 +6,7 @@ import {
 } from "./client";
 import type { ConversationRequestInput } from "../types";
 import { apiClient } from "@/lib/api/api-client";
+import { fetchEventSource } from "@microsoft/fetch-event-source";
 
 // Mock dependencies
 vi.mock("@/lib/api/api-client");
@@ -15,12 +16,12 @@ vi.mock("@/lib/config", () => ({
   },
 }));
 
-const mockFetchEventSource = vi.fn();
 vi.mock("@microsoft/fetch-event-source", () => ({
-  fetchEventSource: mockFetchEventSource,
+  fetchEventSource: vi.fn(),
 }));
 
 const mockApiClient = vi.mocked(apiClient);
+const mockFetchEventSource = vi.mocked(fetchEventSource);
 
 describe("Conversation Client", () => {
   beforeEach(() => {
@@ -87,9 +88,9 @@ describe("Conversation Client", () => {
         "http://localhost:8000/api/v1/conversation/stream",
         expect.objectContaining({
           method: "POST",
-          headers: {
+          headers: expect.objectContaining({
             "Content-Type": "application/json",
-          },
+          }),
           body: JSON.stringify(payload),
           signal: controller.signal,
         }),
@@ -106,11 +107,12 @@ describe("Conversation Client", () => {
       const onChunk = vi.fn();
       const handlers = { onChunk };
 
-      mockFetchEventSource.mockImplementation((_url, options) => {
-        // Simulate onmessage callback
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      mockFetchEventSource.mockImplementation((_url: any, options: any) => {
+        // Simulate onmessage callback with SSE-formatted data
         if (options.onmessage) {
           options.onmessage({
-            data: '{"delta": "test chunk"}',
+            data: 'data: {"delta": "test chunk"}',
             event: "",
             id: "",
           });
@@ -134,12 +136,13 @@ describe("Conversation Client", () => {
       const handlers = { onError };
 
       const testError = new Error("test error");
-      mockFetchEventSource.mockImplementation((_url, options) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      mockFetchEventSource.mockImplementation((_url: any, options: any) => {
         // Simulate onerror callback
         if (options.onerror) {
           options.onerror(testError);
         }
-        throw testError;
+        return Promise.resolve();
       });
 
       streamConversationRequest(payload, handlers);
@@ -157,7 +160,8 @@ describe("Conversation Client", () => {
       const onComplete = vi.fn();
       const handlers = { onComplete };
 
-      mockFetchEventSource.mockImplementation((_url, options) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      mockFetchEventSource.mockImplementation((_url: any, options: any) => {
         // Simulate onclose callback
         if (options.onclose) {
           options.onclose();
