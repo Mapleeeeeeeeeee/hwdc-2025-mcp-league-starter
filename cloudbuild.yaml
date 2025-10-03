@@ -1,0 +1,64 @@
+steps:
+  # Build the container image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/hwdc-2025-mcp-league:$COMMIT_SHA'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/hwdc-2025-mcp-league:latest'
+      - '.'
+    timeout: 1800s
+
+  # Push the container image to Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/hwdc-2025-mcp-league:$COMMIT_SHA'
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/hwdc-2025-mcp-league:latest'
+
+  # Deploy container image to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'hwdc-2025-mcp-league'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/hwdc-2025-mcp-league:$COMMIT_SHA'
+      - '--region'
+      - 'asia-east1'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--memory'
+      - '2Gi'
+      - '--cpu'
+      - '2'
+      - '--timeout'
+      - '300'
+      - '--max-instances'
+      - '10'
+      - '--min-instances'
+      - '0'
+      - '--port'
+      - '8080'
+      - '--set-env-vars'
+      - 'ENVIRONMENT=production,HOST=0.0.0.0,PORT=8000,LOG_LEVEL=INFO,ENABLE_MCP_SYSTEM=true'
+
+# Build timeout
+timeout: 2400s
+
+# Build options
+options:
+  machineType: 'E2_HIGHCPU_8'
+  logging: CLOUD_LOGGING_ONLY
+
+# Images to store in Container Registry
+images:
+  - 'gcr.io/$PROJECT_ID/hwdc-2025-mcp-league:$COMMIT_SHA'
+  - 'gcr.io/$PROJECT_ID/hwdc-2025-mcp-league:latest'
