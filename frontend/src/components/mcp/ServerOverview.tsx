@@ -91,9 +91,20 @@ export function ServerOverview({ initialData }: ServerOverviewProps) {
             disabled={isReloadingAll || isFetching}
             className="inline-flex items-center gap-2 rounded-full border border-orange-500/20 bg-orange-500/10 px-3 py-1.5 text-sm font-medium text-orange-300 transition hover:bg-orange-500/20 disabled:pointer-events-none disabled:opacity-50"
           >
-            <span
-              className={`size-1.5 rounded-full ${isReloadingAll ? "animate-pulse bg-orange-300" : "bg-orange-400/80"}`}
-            />
+            <svg
+              className={`size-4 ${isReloadingAll ? "animate-spin" : ""}`}
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+              />
+            </svg>
             {isReloadingAll ? t("reloading") : t("reloadAll")}
           </button>
         </div>
@@ -166,10 +177,23 @@ export function ServerOverview({ initialData }: ServerOverviewProps) {
                         type="button"
                         onClick={() => void reloadServer(server.name)}
                         disabled={isReloadingServer || isFetching}
-                        className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-xs font-medium text-white/70 transition hover:bg-white/10 disabled:pointer-events-none disabled:opacity-50"
+                        className="rounded-md border border-white/10 bg-white/5 p-1.5 text-white/70 transition hover:bg-white/10 disabled:pointer-events-none disabled:opacity-50"
                         title={t("reload")}
                       >
-                        {isThisServerReloading ? "⟳" : "↻"}
+                        <svg
+                          className={`size-3.5 ${isThisServerReloading ? "animate-spin" : ""}`}
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                          />
+                        </svg>
                       </button>
                     ) : null}
                   </div>

@@ -20,8 +20,9 @@ import {
   useConversationModels,
 } from "@/features/conversation";
 import { useConversationMutation } from "@/features/conversation";
-
+import { useFetchMcpServers } from "@/features/mcp";
 import type { McpToolSelection } from "@/features/mcp";
+import { ToolSelector } from "@/components/mcp/ToolSelector";
 
 type Translator = (
   key: string,
@@ -108,11 +109,15 @@ export function ChatShell({
   const [selectedModelKey, setSelectedModelKey] = useState<string | undefined>(
     modelKey,
   );
+  const [selectedTools, setSelectedTools] = useState<McpToolSelection[]>(
+    defaultTools ?? [],
+  );
 
   const streamControllerRef = useRef<AbortController | null>(null);
 
   const mutation = useConversationMutation();
   const modelsQuery = useConversationModels();
+  const mcpServersQuery = useFetchMcpServers();
 
   const models = modelsQuery.data.models;
 
@@ -193,7 +198,7 @@ export function ChatShell({
         history,
         userId,
         modelKey: selectedModelKey,
-        tools: defaultTools,
+        tools: selectedTools.length > 0 ? selectedTools : undefined,
       };
 
       const shouldStream = isStreamingEnabled && supportsStreaming;
@@ -399,6 +404,14 @@ export function ChatShell({
           </article>
         ) : null}
       </div>
+
+      {mcpServersQuery.data?.servers ? (
+        <ToolSelector
+          servers={mcpServersQuery.data.servers}
+          value={selectedTools}
+          onChange={setSelectedTools}
+        />
+      ) : null}
 
       <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
         <div className="flex items-center gap-3 rounded-full border border-white/10 bg-white/5 px-4 py-2 shadow-[0_12px_30px_-20px_rgba(59,130,246,0.5)]">
