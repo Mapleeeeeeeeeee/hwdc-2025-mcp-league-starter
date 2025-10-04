@@ -9,15 +9,19 @@ FROM python:3.12.11-slim-bookworm AS backend-builder
 WORKDIR /app/backend
 
 # Install uv for faster Python package management
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+COPY --from=ghcr.io/astral-sh/uv:0.8.11 /uv /usr/local/bin/uv
 
-# Copy backend dependency files
+# Configure uv for Docker (compatible with standard Docker)
+ENV UV_LINK_MODE=copy
+ENV UV_COMPILE_BYTECODE=1
+
+# Copy dependency files first for better layer caching
 COPY backend/pyproject.toml backend/uv.lock ./
 
-# Install dependencies
-RUN uv sync --frozen --no-dev
+# Install dependencies only (without project source)
+RUN uv sync --frozen --no-dev --no-install-project
 
-# Copy backend source code
+# Copy source code and install project
 COPY backend/ ./
 
 # ================================
@@ -47,6 +51,8 @@ COPY frontend/eslint.config.mjs ./
 # Build Next.js with standalone output
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
+ENV NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}
+ENV NEXT_PUBLIC_APP_ENV=${NEXT_PUBLIC_APP_ENV}
 
 RUN pnpm build
 
@@ -58,10 +64,8 @@ FROM nginx:bookworm
 # Set shell options for better error handling
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-# Install Python 3.12, Node.js 20, and required system libraries
+# Install Node.js 20 and required system libraries (NO Python from apt)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3 \
-    python3-pip \
     curl \
     ca-certificates \
     gnupg \
@@ -71,6 +75,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get install -y --no-install-recommends nodejs \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
+
+# Copy Python 3.12 from backend-builder (ensures architecture match)
+COPY --from=backend-builder /usr/local/bin/python3.12 /usr/local/bin/python3.12
+COPY --from=backend-builder /usr/local/lib/python3.12 /usr/local/lib/python3.12
+COPY --from=backend-builder /usr/local/lib/libpython3.12.so.1.0 /usr/local/lib/libpython3.12.so.1.0
+
+# Create symlinks for Python binary and shared library
+RUN ln -sf /usr/local/bin/python3.12 /usr/local/bin/python3 && \
+    ln -sf /usr/local/bin/python3.12 /usr/local/bin/python && \
+    ln -sf /usr/local/lib/libpython3.12.so.1.0 /usr/local/lib/libpython3.12.so && \
+    ldconfig
 
 # Install uv in runtime
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
