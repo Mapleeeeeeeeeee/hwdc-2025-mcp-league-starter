@@ -16,10 +16,13 @@ const environmentSchema = z.enum(ENVIRONMENTS);
 
 // Schema for client-side accessible configuration
 const clientConfigSchema = z.object({
-  /** API base URL for backend communication */
-  apiBaseUrl: z.string().url().default("http://localhost:8080"),
+  /**
+   * API base URL for backend communication (required)
+   * Must be a valid absolute URL
+   */
+  apiBaseUrl: z.string().url("NEXT_PUBLIC_API_BASE_URL must be a valid URL"),
   /** Application environment resolved from env variables */
-  environment: environmentSchema.default("development"),
+  environment: environmentSchema,
 });
 
 // Schema for derived configuration values
@@ -35,7 +38,7 @@ const derivedConfigSchema = z.object({
 });
 
 // Combined configuration schema
-const appConfigSchema = clientConfigSchema.merge(derivedConfigSchema);
+const appConfigSchema = clientConfigSchema.extend(derivedConfigSchema.shape);
 
 type AppConfig = z.infer<typeof appConfigSchema>;
 
@@ -50,35 +53,29 @@ const rawEnv = {
 
 /**
  * Parse and validate configuration
+ * Throws ZodError if required environment variables are missing or invalid
  */
 function createConfig(): AppConfig {
-  const fallbackEnvironment: (typeof ENVIRONMENTS)[number] = "development";
-
-  const resolvedAppEnvResult = environmentSchema.safeParse(
+  // Resolve environment with priority: NEXT_PUBLIC_APP_ENV > NODE_ENV
+  const resolvedAppEnv = environmentSchema.parse(
     rawEnv.appEnv ?? rawEnv.nodeEnv,
   );
-  const resolvedAppEnv = resolvedAppEnvResult.success
-    ? resolvedAppEnvResult.data
-    : fallbackEnvironment;
 
-  const resolvedNodeEnvResult = environmentSchema.safeParse(rawEnv.nodeEnv);
-  const resolvedNodeEnv = resolvedNodeEnvResult.success
-    ? resolvedNodeEnvResult.data
-    : fallbackEnvironment;
+  const resolvedNodeEnv = environmentSchema.parse(rawEnv.nodeEnv);
 
-  // Parse client config with defaults
+  // Parse and validate client config (fail fast if invalid)
   const clientConfig = clientConfigSchema.parse({
     apiBaseUrl: rawEnv.apiBaseUrl,
     environment: resolvedAppEnv,
   });
 
-  // Create derived config prioritising APP_ENV
+  // Create derived config
   const derivedConfig = {
     appEnv: resolvedAppEnv,
     nodeEnv: resolvedNodeEnv,
     isDevelopment: resolvedAppEnv !== "production",
     isProduction: resolvedAppEnv === "production",
-  } as const;
+  } satisfies z.infer<typeof derivedConfigSchema>;
 
   // Combine and validate final config
   return appConfigSchema.parse({
