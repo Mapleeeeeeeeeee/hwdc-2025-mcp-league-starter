@@ -8,25 +8,19 @@ import { z } from "zod";
  *
  * Note: Only NEXT_PUBLIC_ prefixed environment variables are accessible in client components.
  * Server-only variables should be handled separately in server components or API routes.
+ *
+ * API Routing Strategy:
+ * - Development: Next.js rewrites proxy /api/* to backend (configured in next.config.ts)
+ * - Production: Nginx reverse proxy handles /api/* routing
+ * - API client always uses relative paths (e.g., /api/users)
  */
 
 const ENVIRONMENTS = ["development", "production", "test", "staging"] as const;
 
 const environmentSchema = z.enum(ENVIRONMENTS);
 
-// Schema for client-side accessible configuration
-const clientConfigSchema = z.object({
-  /**
-   * API base URL for backend communication (required)
-   * Must be a valid absolute URL
-   */
-  apiBaseUrl: z.string().url("NEXT_PUBLIC_API_BASE_URL must be a valid URL"),
-  /** Application environment resolved from env variables */
-  environment: environmentSchema,
-});
-
-// Schema for derived configuration values
-const derivedConfigSchema = z.object({
+// Schema for application configuration
+const appConfigSchema = z.object({
   /** Application environment resolved from env variables */
   appEnv: environmentSchema,
   /** Node environment reported by the runtime */
@@ -37,16 +31,12 @@ const derivedConfigSchema = z.object({
   isProduction: z.boolean(),
 });
 
-// Combined configuration schema
-const appConfigSchema = clientConfigSchema.extend(derivedConfigSchema.shape);
-
 type AppConfig = z.infer<typeof appConfigSchema>;
 
 /**
  * Raw environment variables (only NEXT_PUBLIC_ prefixed for client safety)
  */
 const rawEnv = {
-  apiBaseUrl: process.env.NEXT_PUBLIC_API_BASE_URL,
   appEnv: process.env.NEXT_PUBLIC_APP_ENV,
   nodeEnv: process.env.NODE_ENV,
 };
@@ -63,24 +53,11 @@ function createConfig(): AppConfig {
 
   const resolvedNodeEnv = environmentSchema.parse(rawEnv.nodeEnv);
 
-  // Parse and validate client config (fail fast if invalid)
-  const clientConfig = clientConfigSchema.parse({
-    apiBaseUrl: rawEnv.apiBaseUrl,
-    environment: resolvedAppEnv,
-  });
-
-  // Create derived config
-  const derivedConfig = {
+  return appConfigSchema.parse({
     appEnv: resolvedAppEnv,
     nodeEnv: resolvedNodeEnv,
     isDevelopment: resolvedAppEnv !== "production",
     isProduction: resolvedAppEnv === "production",
-  } satisfies z.infer<typeof derivedConfigSchema>;
-
-  // Combine and validate final config
-  return appConfigSchema.parse({
-    ...clientConfig,
-    ...derivedConfig,
   });
 }
 

@@ -44,10 +44,10 @@ app = FastAPI(
 # Enable CORS for configured client origins
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_allowed_origins,
+    allow_origins=settings.cors_origins,
     allow_credentials=True,
-    allow_methods=settings.cors_allowed_methods,
-    allow_headers=settings.cors_allowed_headers,
+    allow_methods=settings.cors_methods,
+    allow_headers=settings.cors_headers,
 )
 
 # Add trace middleware for request tracking and performance monitoring

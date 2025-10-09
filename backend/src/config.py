@@ -21,34 +21,74 @@ class Settings(BaseSettings):
         default=Path("config/active_llm_model.json"),
         alias="LLM_ACTIVE_MODEL_FILE",
     )
-    cors_allowed_origins: list[str] = Field(
-        default_factory=lambda: [
-            "http://localhost:3000",
-            "http://localhost:3001",
-        ],
+    cors_allowed_origins: str | list[str] = Field(
+        default="",
         alias="CORS_ALLOWED_ORIGINS",
     )
-    cors_allowed_methods: list[str] = Field(
-        default_factory=lambda: [
-            "GET",
-            "POST",
-            "PUT",
-            "PATCH",
-            "DELETE",
-            "OPTIONS",
-        ],
+    cors_allowed_methods: str | list[str] = Field(
+        default="",
         alias="CORS_ALLOWED_METHODS",
     )
-    cors_allowed_headers: list[str] = Field(
-        default_factory=lambda: [
+    cors_allowed_headers: str | list[str] = Field(
+        default="",
+        alias="CORS_ALLOWED_HEADERS",
+    )
+
+    @property
+    def cors_origins(self) -> list[str]:
+        """
+        Get CORS origins based on environment.
+        Production: Explicit origins only (from env var or hardcoded)
+        Development: Flexible origins from env var
+        """
+        # If explicitly set via env var, use it
+        if self.cors_allowed_origins:
+            return (
+                self.cors_allowed_origins
+                if isinstance(self.cors_allowed_origins, list)
+                else []
+            )
+
+        # Environment-specific defaults
+        if self.is_production:
+            # Production: No default origins - must be explicitly configured
+            # This forces deployment to set CORS_ALLOWED_ORIGINS
+            return []
+        else:
+            # Development: Sensible defaults
+            return [
+                "http://localhost:3001",  # Next.js dev server
+                "http://localhost:8080",  # Docker
+                "http://localhost:3000",  # Alternative dev port
+            ]
+
+    @property
+    def cors_methods(self) -> list[str]:
+        """Get CORS methods (environment-independent)"""
+        if self.cors_allowed_methods:
+            return (
+                self.cors_allowed_methods
+                if isinstance(self.cors_allowed_methods, list)
+                else []
+            )
+        return ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
+
+    @property
+    def cors_headers(self) -> list[str]:
+        """Get CORS headers (environment-independent)"""
+        if self.cors_allowed_headers:
+            return (
+                self.cors_allowed_headers
+                if isinstance(self.cors_allowed_headers, list)
+                else []
+            )
+        return [
             "Authorization",
             "Content-Type",
             "Accept",
             "Accept-Language",
             "X-Requested-With",
-        ],
-        alias="CORS_ALLOWED_HEADERS",
-    )
+        ]
 
     @property
     def is_development(self) -> bool:

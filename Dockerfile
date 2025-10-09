@@ -51,7 +51,9 @@ COPY frontend/eslint.config.mjs ./
 # Build Next.js with standalone output
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
-ENV NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}
+# Set build-time environment variable
+# Production uses Nginx reverse proxy for API routing, no client-side config needed
+ARG NEXT_PUBLIC_APP_ENV=production
 ENV NEXT_PUBLIC_APP_ENV=${NEXT_PUBLIC_APP_ENV}
 
 RUN pnpm build

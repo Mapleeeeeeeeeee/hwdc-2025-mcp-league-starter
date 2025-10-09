@@ -3,26 +3,30 @@ import type { ApiResponse } from "./types";
 import { config } from "../config";
 
 type RequestOptions = RequestInit & {
-  baseUrl?: string;
   parseJson?: boolean;
 };
 
-function buildUrl(path: string, baseUrl: string) {
-  try {
-    return new URL(path, baseUrl).toString();
-  } catch (error) {
+/**
+ * Ensures path is a valid relative URL starting with /
+ * API routing is handled by:
+ * - Development: Next.js rewrites (next.config.ts)
+ * - Production: Nginx reverse proxy
+ */
+function buildUrl(path: string): string {
+  if (!path.startsWith("/")) {
     if (config.isDevelopment) {
-      console.error("Failed to build API URL", { path, baseUrl, error });
+      console.warn(`API path should start with /: ${path}`);
     }
-    throw error;
+    return `/${path}`;
   }
+  return path;
 }
 
 export async function apiRequest<T>(
   path: string,
-  { baseUrl = config.apiBaseUrl, parseJson = true, ...init }: RequestOptions = {},
+  { parseJson = true, ...init }: RequestOptions = {},
 ): Promise<T> {
-  const url = buildUrl(path, baseUrl);
+  const url = buildUrl(path);
   const response = await fetch(url, {
     cache: "no-store",
     credentials: "include",
@@ -46,7 +50,12 @@ export async function apiRequest<T>(
     if (config.isDevelopment) {
       console.error("Failed to parse API response", { url, error });
     }
-    throw new ApiError(response.status, "InvalidJsonResponse", undefined, undefined);
+    throw new ApiError(
+      response.status,
+      "InvalidJsonResponse",
+      undefined,
+      undefined,
+    );
   }
 
   if (!response.ok || !payload?.success) {
@@ -69,41 +78,44 @@ export async function apiRequest<T>(
 export const apiClient = {
   get: <T>(
     path: string,
-    options?: Omit<RequestOptions, 'method' | 'body'>
-  ): Promise<T> => apiRequest<T>(path, { ...options, method: 'GET' }),
+    options?: Omit<RequestOptions, "method" | "body">,
+  ): Promise<T> => apiRequest<T>(path, { ...options, method: "GET" }),
 
   post: <T, B = unknown>(
     path: string,
     body?: B,
-    options?: Omit<RequestOptions, 'method' | 'body'>
-  ): Promise<T> => apiRequest<T>(path, {
-    ...options,
-    method: 'POST',
-    body: body ? JSON.stringify(body) : undefined
-  }),
+    options?: Omit<RequestOptions, "method" | "body">,
+  ): Promise<T> =>
+    apiRequest<T>(path, {
+      ...options,
+      method: "POST",
+      body: body ? JSON.stringify(body) : undefined,
+    }),
 
   put: <T, B = unknown>(
     path: string,
     body?: B,
-    options?: Omit<RequestOptions, 'method' | 'body'>
-  ): Promise<T> => apiRequest<T>(path, {
-    ...options,
-    method: 'PUT',
-    body: body ? JSON.stringify(body) : undefined
-  }),
+    options?: Omit<RequestOptions, "method" | "body">,
+  ): Promise<T> =>
+    apiRequest<T>(path, {
+      ...options,
+      method: "PUT",
+      body: body ? JSON.stringify(body) : undefined,
+    }),
 
   patch: <T, B = unknown>(
     path: string,
     body?: B,
-    options?: Omit<RequestOptions, 'method' | 'body'>
-  ): Promise<T> => apiRequest<T>(path, {
-    ...options,
-    method: 'PATCH',
-    body: body ? JSON.stringify(body) : undefined
-  }),
+    options?: Omit<RequestOptions, "method" | "body">,
+  ): Promise<T> =>
+    apiRequest<T>(path, {
+      ...options,
+      method: "PATCH",
+      body: body ? JSON.stringify(body) : undefined,
+    }),
 
   delete: <T>(
     path: string,
-    options?: Omit<RequestOptions, 'method' | 'body'>
-  ): Promise<T> => apiRequest<T>(path, { ...options, method: 'DELETE' }),
+    options?: Omit<RequestOptions, "method" | "body">,
+  ): Promise<T> => apiRequest<T>(path, { ...options, method: "DELETE" }),
 };

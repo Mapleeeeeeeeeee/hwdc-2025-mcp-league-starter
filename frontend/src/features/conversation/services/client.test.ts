@@ -10,12 +10,6 @@ import { fetchEventSource } from "@microsoft/fetch-event-source";
 
 // Mock dependencies
 vi.mock("@/lib/api/api-client");
-vi.mock("@/lib/config", () => ({
-  config: {
-    apiBaseUrl: "http://localhost:8000",
-  },
-}));
-
 vi.mock("@microsoft/fetch-event-source", () => ({
   fetchEventSource: vi.fn(),
 }));
@@ -85,7 +79,7 @@ describe("Conversation Client", () => {
       const controller = streamConversationRequest(payload, {});
 
       expect(mockFetchEventSource).toHaveBeenCalledWith(
-        "http://localhost:8000/api/v1/conversation/stream",
+        "/api/v1/conversation/stream",
         expect.objectContaining({
           method: "POST",
           headers: expect.objectContaining({

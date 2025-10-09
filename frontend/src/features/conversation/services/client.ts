@@ -1,6 +1,5 @@
 import { apiClient } from "@/lib/api/api-client";
 import { API_PATHS } from "@/lib/api/paths";
-import { config } from "@/lib/config";
 import { fetchEventSource } from "@microsoft/fetch-event-source";
 
 import type {
@@ -19,8 +18,15 @@ type StreamEventHandlers = {
 const SSE_EVENT_PREFIX = "event:";
 const SSE_DATA_PREFIX = "data:";
 
-function buildAbsoluteUrl(path: string) {
-  return new URL(path, config.apiBaseUrl).toString();
+/**
+ * Build URL for SSE endpoint
+ * Uses relative path - routing handled by Next.js rewrites (dev) or Nginx (prod)
+ */
+function buildAbsoluteUrl(path: string): string {
+  if (!path.startsWith("/")) {
+    return `/${path}`;
+  }
+  return path;
 }
 
 export async function sendConversationRequest(
