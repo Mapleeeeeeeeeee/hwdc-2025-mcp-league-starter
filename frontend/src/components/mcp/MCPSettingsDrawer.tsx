@@ -66,9 +66,8 @@ export function MCPSettingsDrawer({
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{
-              type: "spring",
-              damping: 30,
-              stiffness: 300,
+              duration: 0.3,
+              ease: [0.4, 0, 0.2, 1],
             }}
             className="fixed right-0 top-0 z-50 h-full w-full max-w-md overflow-hidden bg-neutral-900 shadow-2xl sm:max-w-lg"
             role="dialog"
