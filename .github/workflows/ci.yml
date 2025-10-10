@@ -144,11 +144,11 @@ jobs:
 
     - name: Build Docker images
       run: |
-        docker-compose build --no-cache
+        docker compose build --no-cache
 
     - name: Start Docker services
       run: |
-        docker-compose up -d
+        docker compose up -d
 
     - name: Wait for services to be healthy
       run: |
@@ -172,7 +172,7 @@ jobs:
     - name: Cleanup
       if: always()
       run: |
-        docker-compose down -v
+        docker compose down -v
 
   # Security scanning
   security:

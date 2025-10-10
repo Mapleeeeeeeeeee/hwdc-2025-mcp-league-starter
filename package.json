@@ -19,9 +19,9 @@
     "type-check": "cd backend && uv run mypy . && pnpm --filter frontend type-check",
     "type-check:frontend": "pnpm --filter frontend type-check",
     "type-check:backend": "cd backend && uv run mypy .",
-    "docker:up": "docker-compose up -d",
-    "docker:down": "docker-compose down",
-    "docker:build": "docker-compose build"
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:build": "docker compose build"
   },
   "devDependencies": {
     "concurrently": "^9.1.0",
