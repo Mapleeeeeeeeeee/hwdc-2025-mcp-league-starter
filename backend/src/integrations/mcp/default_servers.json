@@ -15,7 +15,7 @@
       "description": "Context7 documentation tools"
     },
     "ms365": {
-      "command": "npx -y @softeria/ms-365-mcp-server --org-mode"
+      "command": "npx -y @softeria/ms-365-mcp-server"
     }
   }
 }

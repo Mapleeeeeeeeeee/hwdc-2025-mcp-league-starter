@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  # Main application (Backend + Frontend + Nginx)
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hwdc-mcp-league
+    ports:
+      - "${EXTERNAL_PORT:-8080}:8080"
+    environment:
+      # Server Configuration
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - HOST=0.0.0.0
+      - PORT=${BACKEND_PORT:-8000}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+
+      # CORS Configuration
+      # Format: Comma-separated URLs (use quotes if URLs contain special chars)
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-http://localhost:8080}
+
+      # OpenAI Configuration
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-your-openai-api-key-here}
+
+      # MCP Configuration
+      - ENABLE_MCP_SYSTEM=${ENABLE_MCP_SYSTEM:-true}
+      - MCP_NPX_COMMAND=npx
+      - MCP_BASE_PATH=.
+      - MCP_NODE_ENV=${MCP_NODE_ENV:-development}
+      - MCP_TIMEOUT_SECONDS=60
+      - MCP_ENABLED_SERVERS=${MCP_ENABLED_SERVERS:-}
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+    restart: unless-stopped
+
+    # Optional: Mount volumes for development
+    # volumes:
+    #   - ./backend:/app/backend
+    #   - ./frontend:/app/frontend
