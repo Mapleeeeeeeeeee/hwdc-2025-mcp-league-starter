@@ -336,101 +336,105 @@ export function MCPToolSelector({
                     </div>
 
                     {/* Function List */}
-                    {isExpanded &&
-                      isSelected &&
-                      server.functions.length > 0 && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: "auto", opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          className="ml-8 mt-1 space-y-1 overflow-hidden border-l-2 border-white/10 pl-3"
-                        >
-                          {/* Select All Functions Button */}
-                          <button
-                            type="button"
-                            onClick={() =>
+                    {isExpanded && server.functions.length > 0 && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="ml-8 mt-1 space-y-1 overflow-hidden border-l-2 border-white/10 pl-3"
+                      >
+                        {/* Select All Functions Button */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!isSelected) {
+                              // Server not selected, select it with all functions
+                              onChange([...value, { server: server.name }]);
+                            } else {
+                              // Server selected, toggle all functions
                               onChange(
                                 value.map((tool) =>
                                   tool.server === server.name
                                     ? { ...tool, functions: undefined }
                                     : tool,
                                 ),
-                              )
+                              );
                             }
-                            className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs transition hover:bg-white/5"
+                          }}
+                          className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs transition hover:bg-white/5"
+                        >
+                          <div
+                            className={cn(
+                              "flex h-3 w-3 items-center justify-center rounded-sm border",
+                              allSelected
+                                ? "border-blue-500 bg-blue-500"
+                                : "border-white/30",
+                            )}
                           >
-                            <div
-                              className={cn(
-                                "flex h-3 w-3 items-center justify-center rounded-sm border",
-                                allSelected
-                                  ? "border-blue-500 bg-blue-500"
-                                  : "border-white/30",
-                              )}
-                            >
-                              {allSelected && (
-                                <svg
-                                  className="h-2 w-2 text-white"
-                                  fill="none"
-                                  viewBox="0 0 24 24"
-                                  stroke="currentColor"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={4}
-                                    d="M5 13l4 4L19 7"
-                                  />
-                                </svg>
-                              )}
-                            </div>
-                            <span className="font-medium text-white/60">
-                              {t("allFunctions")}
-                            </span>
-                          </button>
-
-                          {/* Individual Functions */}
-                          {server.functions.map((fn) => {
-                            const fnSelected = isFunctionSelected(
-                              server.name,
-                              fn,
-                            );
-                            return (
-                              <button
-                                key={fn}
-                                type="button"
-                                onClick={() => toggleFunction(server.name, fn)}
-                                className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs transition hover:bg-white/5"
+                            {allSelected && (
+                              <svg
+                                className="h-2 w-2 text-white"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
                               >
-                                <div
-                                  className={cn(
-                                    "flex h-3 w-3 items-center justify-center rounded-sm border",
-                                    fnSelected
-                                      ? "border-emerald-500 bg-emerald-500"
-                                      : "border-white/30",
-                                  )}
-                                >
-                                  {fnSelected && (
-                                    <svg
-                                      className="h-2 w-2 text-white"
-                                      fill="none"
-                                      viewBox="0 0 24 24"
-                                      stroke="currentColor"
-                                    >
-                                      <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={4}
-                                        d="M5 13l4 4L19 7"
-                                      />
-                                    </svg>
-                                  )}
-                                </div>
-                                <span className="text-white/60">{fn}</span>
-                              </button>
-                            );
-                          })}
-                        </motion.div>
-                      )}
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={4}
+                                  d="M5 13l4 4L19 7"
+                                />
+                              </svg>
+                            )}
+                          </div>
+                          <span className="font-medium text-white/60">
+                            {t("allFunctions")}
+                          </span>
+                        </button>
+
+                        {/* Individual Functions */}
+                        {server.functions.map((fn) => {
+                          const fnSelected = isFunctionSelected(
+                            server.name,
+                            fn,
+                          );
+                          return (
+                            <button
+                              key={fn}
+                              type="button"
+                              onClick={() => toggleFunction(server.name, fn)}
+                              className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs transition hover:bg-white/5"
+                            >
+                              <div
+                                className={cn(
+                                  "flex h-3 w-3 items-center justify-center rounded-sm border",
+                                  fnSelected
+                                    ? "border-emerald-500 bg-emerald-500"
+                                    : "border-white/30",
+                                )}
+                              >
+                                {fnSelected && (
+                                  <svg
+                                    className="h-2 w-2 text-white"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={4}
+                                      d="M5 13l4 4L19 7"
+                                    />
+                                  </svg>
+                                )}
+                              </div>
+                              <span className="text-white/60">{fn}</span>
+                            </button>
+                          );
+                        })}
+                      </motion.div>
+                    )}
                   </div>
                 );
               })}
