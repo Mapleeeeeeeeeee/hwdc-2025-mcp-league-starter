@@ -160,9 +160,9 @@ jobs:
       run: |
         curl -f http://localhost:8080/health || exit 1
 
-    - name: Test API endpoint
+    - name: Test API documentation
       run: |
-        curl -f http://localhost:8080/api/docs || exit 1
+        curl -f http://localhost:8080/docs || exit 1
 
     - name: Check container logs
       if: failure()
