@@ -72,9 +72,9 @@ pnpm type-check      # 類型檢查
 
 ```bash
 # 1. 複製環境變數模板
-cp .env.docker .env.local
+cp .env.docker .env
 
-# 2. 編輯 .env.local 填入你的 OpenAI API key
+# 2. 編輯 .env 填入你的 OpenAI API key
 # OPENAI_API_KEY=sk-your-actual-key-here
 
 # 3. 啟動容器
