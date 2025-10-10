@@ -3,15 +3,10 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-
-interface Model {
-  key: string;
-  modelId: string;
-  supportsStreaming?: boolean;
-}
+import type { LLMModelDescriptor } from "@/features/conversation";
 
 interface ModelSelectorProps {
-  models: Model[];
+  models: LLMModelDescriptor[];
   selectedModelKey?: string;
   activeModelKey?: string;
   onSelect: (modelKey: string) => void;

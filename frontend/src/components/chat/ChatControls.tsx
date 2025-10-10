@@ -2,17 +2,12 @@
 
 import { ModelSelector } from "@/components/ui/ModelSelector";
 import { MCPToolSelector } from "@/components/ui/MCPToolSelector";
+import type { LLMModelDescriptor } from "@/features/conversation";
 import type { McpServer, McpToolSelection } from "@/features/mcp";
-
-interface Model {
-  key: string;
-  modelId: string;
-  supportsStreaming?: boolean;
-}
 
 interface ChatControlsProps {
   // Model selection
-  models: Model[];
+  models: LLMModelDescriptor[];
   selectedModelKey?: string;
   activeModelKey?: string;
   onModelSelect: (modelKey: string) => void;

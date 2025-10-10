@@ -12,8 +12,12 @@
   "chat": {
     "title": "智慧對話",
     "emptyState": "目前沒有訊息，輸入內容開始對話。",
+    "placeholder": "開始與 AI 對話吧！輸入您的問題或想法...",
     "inputPlaceholder": "輸入訊息...",
+    "inputHint": "Enter 送出，Shift + Enter 換行",
     "send": "送出",
+    "user": "我",
+    "assistant": "助理",
     "assistantLabel": "助理",
     "userLabel": "我",
     "status": {

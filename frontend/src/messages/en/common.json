@@ -12,8 +12,12 @@
   "chat": {
     "title": "Conversation",
     "emptyState": "No messages yet. Say hello to start the conversation.",
+    "placeholder": "Start a conversation! Type your question or thought...",
     "inputPlaceholder": "Type your message...",
+    "inputHint": "Enter to send, Shift + Enter for new line",
     "send": "Send",
+    "user": "You",
+    "assistant": "Assistant",
     "assistantLabel": "Assistant",
     "userLabel": "You",
     "status": {
