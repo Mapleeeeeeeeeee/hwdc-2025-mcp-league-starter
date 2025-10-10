@@ -33,14 +33,19 @@ export default async function LocaleLandingPage({
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      {/* Enhanced ChatShell with integrated header */}
-      <ChatShell
-        title={tCommon("landing.title")}
-        subtitle={tCommon("landing.subtitle")}
-      />
+    <div className="flex gap-6 h-[calc(100vh-120px)]">
+      {/* Main Content - ChatShell */}
+      <div className="flex-1 min-w-0">
+        <ChatShell
+          title={tCommon("landing.title")}
+          subtitle={tCommon("landing.subtitle")}
+        />
+      </div>
 
-      <ServerOverview initialData={initialSnapshot} />
+      {/* Right Sidebar - Server Overview */}
+      <aside className="w-96 flex-shrink-0 overflow-hidden">
+        <ServerOverview initialData={initialSnapshot} />
+      </aside>
     </div>
   );
 }
