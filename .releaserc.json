@@ -42,7 +42,7 @@
     [
       "@semantic-release/exec",
       {
-        "prepareCmd": "npm pkg set version=${nextRelease.version} --prefix frontend && sed -i '' 's/^version = \".*\"/version = \"${nextRelease.version}\"/' backend/pyproject.toml"
+        "prepareCmd": "npm pkg set version=${nextRelease.version} --prefix frontend && sed -i.bak 's/^version = \".*\"/version = \"${nextRelease.version}\"/' backend/pyproject.toml && rm -f backend/pyproject.toml.bak"
       }
     ],
     [
