@@ -24,9 +24,9 @@ import {
 import { useConversationMutation } from "@/features/conversation";
 import { useFetchMcpServers } from "@/features/mcp";
 import type { McpToolSelection } from "@/features/mcp";
-import { ToolSelector } from "@/components/mcp/ToolSelector";
 import { ChatMessage, ChatMessageLoading } from "./ChatMessage";
 import { ModelSelector } from "@/components/ui/ModelSelector";
+import { MCPToolSelector } from "@/components/ui/MCPToolSelector";
 import { cn, staggerContainer } from "@/lib/utils";
 
 type Translator = (
@@ -452,7 +452,7 @@ export function ChatShell({
           variants={staggerContainer}
           initial="initial"
           animate="animate"
-          className="flex max-h-[420px] flex-col gap-3 overflow-y-auto rounded-2xl border border-white/5 bg-neutral-950/60 p-4 backdrop-blur-sm scrollbar-thin scrollbar-track-white/5 scrollbar-thumb-white/20"
+          className="flex min-h-[500px] max-h-[70vh] flex-col gap-3 overflow-y-auto rounded-2xl border border-white/5 bg-neutral-950/60 p-4 backdrop-blur-sm scrollbar-thin scrollbar-track-white/5 scrollbar-thumb-white/20"
         >
           {hasMessages ? (
             messages.map((message, index) => (
@@ -502,7 +502,7 @@ export function ChatShell({
 
             {/* MCP Tool Selector */}
             {mcpServersQuery.data?.servers && (
-              <ToolSelector
+              <MCPToolSelector
                 servers={mcpServersQuery.data.servers}
                 value={selectedTools}
                 onChange={setSelectedTools}

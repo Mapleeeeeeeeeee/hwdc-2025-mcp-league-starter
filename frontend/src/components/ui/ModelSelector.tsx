@@ -136,100 +136,110 @@ export function ModelSelector({
               const isDefault = model.key === activeModelKey;
 
               return (
-                <button
+                <div
                   key={model.key}
-                  type="button"
-                  onClick={() => {
-                    onSelect(model.key);
-                    setIsOpen(false);
-                  }}
                   className={cn(
-                    "group relative flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-all",
-                    isSelected
-                      ? "bg-emerald-500/10 text-white"
-                      : "text-white/70 hover:bg-white/5 hover:text-white",
+                    "group relative flex w-full items-center gap-3 rounded-lg px-3 py-2.5 transition-all",
+                    isSelected ? "bg-emerald-500/10" : "hover:bg-white/5",
                   )}
                 >
-                  {/* Model Icon */}
-                  <div
-                    className={cn(
-                      "flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-gradient-to-br text-xs font-bold text-white",
-                      model.key.includes("gpt")
-                        ? "from-emerald-500 to-teal-600"
-                        : model.key.includes("claude")
-                          ? "from-purple-500 to-blue-600"
-                          : "from-orange-500 to-red-600",
-                    )}
+                  {/* Model Selection Button */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onSelect(model.key);
+                      setIsOpen(false);
+                    }}
+                    className="flex flex-1 items-center gap-3 text-left"
                   >
-                    {model.key.charAt(0).toUpperCase()}
-                  </div>
-
-                  {/* Model Info */}
-                  <div className="flex flex-1 flex-col">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium">{model.key}</span>
-                      {isDefault && (
-                        <span className="rounded-full bg-blue-500/20 px-2 py-0.5 text-[10px] font-semibold text-blue-300">
-                          預設
-                        </span>
+                    {/* Model Icon */}
+                    <div
+                      className={cn(
+                        "flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-gradient-to-br text-xs font-bold text-white",
+                        model.key.includes("gpt")
+                          ? "from-emerald-500 to-teal-600"
+                          : model.key.includes("claude")
+                            ? "from-purple-500 to-blue-600"
+                            : "from-orange-500 to-red-600",
                       )}
-                    </div>
-                    <span className="text-xs text-white/40">
-                      {model.modelId}
-                    </span>
-                  </div>
-
-                  {/* Selected Indicator */}
-                  {isSelected && (
-                    <motion.svg
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      className="h-5 w-5 text-emerald-400"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M5 13l4 4L19 7"
-                      />
-                    </motion.svg>
+                      {model.key.charAt(0).toUpperCase()}
+                    </div>
+
+                    {/* Model Info */}
+                    <div className="flex flex-1 flex-col">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={cn(
+                            "text-sm font-medium",
+                            isSelected ? "text-white" : "text-white/70",
+                          )}
+                        >
+                          {model.key}
+                        </span>
+                        {isDefault && (
+                          <span className="rounded-full bg-blue-500/20 px-2 py-0.5 text-[10px] font-semibold text-blue-300">
+                            預設
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-xs text-white/40">
+                        {model.modelId}
+                      </span>
+                    </div>
+
+                    {/* Selected Indicator */}
+                    {isSelected && (
+                      <motion.svg
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        className="h-5 w-5 text-emerald-400"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M5 13l4 4L19 7"
+                        />
+                      </motion.svg>
+                    )}
+                  </button>
+
+                  {/* Set as Default Star Button - Now beside each model */}
+                  {isSelected && !isDefault && onSetAsDefault && (
+                    <motion.button
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSetAsDefault();
+                      }}
+                      disabled={isPending}
+                      className="flex items-center justify-center rounded-lg p-1.5 text-yellow-400 transition-all hover:bg-yellow-400/10 disabled:cursor-not-allowed disabled:opacity-50"
+                      title="設為預設模型"
+                    >
+                      <svg
+                        className="h-5 w-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
+                        />
+                      </svg>
+                    </motion.button>
                   )}
-                </button>
+                </div>
               );
             })}
-
-            {/* Set as Default Button */}
-            {selectedModelKey && !isCurrentModelDefault && onSetAsDefault && (
-              <div className="mt-2 border-t border-white/10 pt-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    onSetAsDefault();
-                    setIsOpen(false);
-                  }}
-                  disabled={isPending}
-                  className="flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-500/10 px-3 py-2 text-sm font-medium text-emerald-300 transition-all hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <svg
-                    className="h-4 w-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                  <span>設為預設模型</span>
-                </button>
-              </div>
-            )}
           </motion.div>
         )}
       </AnimatePresence>
