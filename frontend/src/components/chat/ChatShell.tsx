@@ -23,10 +23,12 @@ import {
 } from "@/features/conversation";
 import { useConversationMutation } from "@/features/conversation";
 import { useFetchMcpServers } from "@/features/mcp";
-import type { McpToolSelection } from "@/features/mcp";
+import type { McpToolSelection, McpServersSnapshot } from "@/features/mcp";
 import { ChatMessage, ChatMessageLoading } from "./ChatMessage";
 import { ModelSelector } from "@/components/ui/ModelSelector";
 import { MCPToolSelector } from "@/components/ui/MCPToolSelector";
+import { Drawer } from "@/components/ui/Drawer";
+import { ServerOverview } from "@/components/mcp/ServerOverview";
 import { cn, staggerContainer } from "@/lib/utils";
 
 type Translator = (
@@ -46,6 +48,7 @@ type ChatShellProps = {
   defaultTools?: McpToolSelection[];
   userId?: string;
   modelKey?: string;
+  initialMcpData?: McpServersSnapshot;
 };
 
 function toHistory(messages: ChatMessage[]): ConversationMessage[] {
@@ -103,6 +106,7 @@ export function ChatShell({
   defaultTools,
   userId,
   modelKey,
+  initialMcpData,
 }: ChatShellProps) {
   const tChat = useTranslations("common.chat");
   const tErrors = useTranslations("errors");
@@ -122,6 +126,7 @@ export function ChatShell({
     defaultTools ?? [],
   );
   const [historyIndex, setHistoryIndex] = useState(-1);
+  const [isMcpDrawerOpen, setIsMcpDrawerOpen] = useState(false);
 
   const streamControllerRef = useRef<AbortController | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -408,8 +413,37 @@ export function ChatShell({
         <motion.header
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="space-y-2 text-center"
+          className="relative space-y-2 text-center"
         >
+          {/* MCP Settings Button */}
+          <button
+            type="button"
+            onClick={() => setIsMcpDrawerOpen(true)}
+            className="absolute right-0 top-0 flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/70 backdrop-blur-sm transition hover:border-emerald-500/30 hover:bg-white/10 hover:text-white"
+            title="MCP 設定"
+          >
+            <svg
+              className="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+              />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+              />
+            </svg>
+            <span className="hidden sm:inline">MCP 設定</span>
+          </button>
+
           <h1 className="bg-gradient-to-b from-white via-white/90 to-white/60 bg-clip-text text-3xl font-bold text-transparent md:text-4xl">
             {title}
           </h1>
@@ -582,6 +616,16 @@ export function ChatShell({
           ) : null}
         </form>
       </div>
+
+      {/* MCP Settings Drawer */}
+      <Drawer
+        isOpen={isMcpDrawerOpen}
+        onClose={() => setIsMcpDrawerOpen(false)}
+        title="MCP 伺服器設定"
+        width="32rem"
+      >
+        <ServerOverview initialData={initialMcpData} />
+      </Drawer>
     </motion.section>
   );
 }
