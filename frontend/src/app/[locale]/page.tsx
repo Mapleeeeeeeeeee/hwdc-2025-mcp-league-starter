@@ -1,6 +1,5 @@
 import { getTranslations } from "next-intl/server";
 
-import { LandingHero } from "@/components/chat/LandingHero";
 import { ChatShell } from "@/components/chat/ChatShell";
 import { ServerOverview } from "@/components/mcp/ServerOverview";
 import { listServers } from "@/features/mcp";
@@ -34,16 +33,12 @@ export default async function LocaleLandingPage({
   }
 
   return (
-    <div className="flex flex-col gap-10">
-      <LandingHero
+    <div className="flex flex-col gap-6">
+      {/* Enhanced ChatShell with integrated header */}
+      <ChatShell
         title={tCommon("landing.title")}
         subtitle={tCommon("landing.subtitle")}
-        cta={tCommon("landing.cta")}
-        badge={tCommon("landing.badge")}
-        footerLabel={tCommon("landing.protocol")}
       />
-
-      <ChatShell />
 
       <ServerOverview initialData={initialSnapshot} />
     </div>

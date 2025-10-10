@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 
 import { usePathname, useRouter } from "@/lib/i18n/navigation";
+import { LanguageToggle } from "@/components/ui/LanguageToggle";
 
 import type { AppLocale } from "@/lib/i18n/config";
 import { LOCALES } from "@/lib/i18n/config";
@@ -17,7 +18,7 @@ export function LocaleSwitcher() {
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
 
-  const handleChange = (nextLocale: AppLocale) => {
+  const handleChange = (nextLocale: string) => {
     if (nextLocale === locale) return;
 
     const queryEntries = searchParams
@@ -25,27 +26,24 @@ export function LocaleSwitcher() {
       : undefined;
 
     startTransition(() => {
-      router.replace({ pathname, query: queryEntries }, { locale: nextLocale });
+      router.replace(
+        { pathname, query: queryEntries },
+        { locale: nextLocale as AppLocale },
+      );
     });
   };
 
+  const options = LOCALES.map((code) => ({
+    value: code,
+    label: t(`options.${code}`),
+  }));
+
   return (
-    <label className="flex items-center gap-2 rounded-full border border-white/10 bg-white/10/30 px-3 py-1 text-xs text-white/70">
-      <span className="font-semibold uppercase tracking-[0.3em] text-white/50">
-        {t("label")}
-      </span>
-      <select
-        className="bg-transparent text-white focus:outline-none"
-        value={locale}
-        onChange={(event) => handleChange(event.target.value as AppLocale)}
-        disabled={isPending}
-      >
-        {LOCALES.map((code) => (
-          <option key={code} value={code} className="text-black">
-            {t(`options.${code}`)}
-          </option>
-        ))}
-      </select>
-    </label>
+    <LanguageToggle
+      value={locale}
+      onChange={handleChange}
+      options={options}
+      disabled={isPending}
+    />
   );
 }

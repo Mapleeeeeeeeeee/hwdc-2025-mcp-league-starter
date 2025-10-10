@@ -9,6 +9,7 @@ import {
   useState,
 } from "react";
 import { useTranslations } from "next-intl";
+import { motion } from "framer-motion";
 
 import { ApiError } from "@/lib/api/api-error";
 import {
@@ -24,7 +25,9 @@ import { useConversationMutation } from "@/features/conversation";
 import { useFetchMcpServers } from "@/features/mcp";
 import type { McpToolSelection } from "@/features/mcp";
 import { ToolSelector } from "@/components/mcp/ToolSelector";
-import { MessageContent } from "./MessageContent";
+import { ChatMessage, ChatMessageLoading } from "./ChatMessage";
+import { ModelSelector } from "@/components/ui/ModelSelector";
+import { cn, staggerContainer } from "@/lib/utils";
 
 type Translator = (
   key: string,
@@ -36,6 +39,8 @@ type ChatMessage = ConversationMessage & {
 };
 
 type ChatShellProps = {
+  title?: string;
+  subtitle?: string;
   initialConversationId?: string;
   initialMessages?: ChatMessage[];
   defaultTools?: McpToolSelection[];
@@ -91,6 +96,8 @@ function appendAssistantMessage(
 }
 
 export function ChatShell({
+  title,
+  subtitle,
   initialConversationId,
   initialMessages = [],
   defaultTools,
@@ -390,177 +397,191 @@ export function ChatShell({
     selectedModelKey === modelsQuery.data.activeModelKey;
 
   return (
-    <section className="flex flex-col gap-4 rounded-3xl border border-white/10 bg-white/5 p-6">
-      <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="flex flex-col gap-2">
-          <h2 className="text-lg font-semibold text-white/90">
-            {tChat("title")}
-          </h2>
-          {isBusy ? (
-            <span className="text-xs font-medium uppercase tracking-[0.3em] text-emerald-300">
+    <motion.section
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6, ease: "easeOut" }}
+      className="flex flex-col gap-6"
+    >
+      {/* App Header */}
+      {title && (
+        <motion.header
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="space-y-2 text-center"
+        >
+          <h1 className="bg-gradient-to-b from-white via-white/90 to-white/60 bg-clip-text text-3xl font-bold text-transparent md:text-4xl">
+            {title}
+          </h1>
+          {subtitle && (
+            <p className="text-sm text-white/60 md:text-base">{subtitle}</p>
+          )}
+        </motion.header>
+      )}
+
+      {/* Chat Container */}
+      <div className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+        {/* Status indicator */}
+        {isBusy && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            className="mb-4 flex items-center gap-2 text-xs text-emerald-300"
+          >
+            <motion.span
+              animate={{
+                scale: [1, 1.2, 1],
+                opacity: [0.5, 1, 0.5],
+              }}
+              transition={{
+                duration: 1.5,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
+              className="h-2 w-2 rounded-full bg-emerald-400"
+            />
+            <span>
               {isStreamingActive
                 ? tChat("status.streaming")
-                : tChat("status.pending")}
+                : tChat("status.generating")}
             </span>
+          </motion.div>
+        )}
+
+        <motion.div
+          variants={staggerContainer}
+          initial="initial"
+          animate="animate"
+          className="flex max-h-[420px] flex-col gap-3 overflow-y-auto rounded-2xl border border-white/5 bg-neutral-950/60 p-4 backdrop-blur-sm scrollbar-thin scrollbar-track-white/5 scrollbar-thumb-white/20"
+        >
+          {hasMessages ? (
+            messages.map((message, index) => (
+              <ChatMessage
+                key={message.id}
+                message={message}
+                userLabel={tChat("userLabel")}
+                assistantLabel={tChat("assistantLabel")}
+              />
+            ))
+          ) : (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex flex-1 items-center justify-center text-sm text-white/40"
+            >
+              {tChat("emptyState")}
+            </motion.div>
+          )}
+
+          {isBusy ? (
+            <ChatMessageLoading
+              label={
+                isStreamingActive
+                  ? tChat("status.streaming")
+                  : tChat("status.generating")
+              }
+              isStreaming={isStreamingActive}
+            />
           ) : null}
-        </div>
+        </motion.div>
 
-        <div className="flex flex-wrap items-center gap-3 text-xs">
-          <label className="flex items-center gap-2 rounded-full border border-white/10 bg-white/10/20 px-3 py-1 text-white/70">
-            <span className="font-semibold uppercase tracking-[0.3em] text-white/50">
-              {tChat("model.label")}
-            </span>
-            <select
-              className="min-w-[9rem] bg-transparent text-white focus:outline-none"
-              value={selectedModelKey ?? ""}
-              onChange={(event) => handleModelChange(event.target.value)}
+        {/* Input Section with Model Selector */}
+        <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
+          {/* Model Selector above input */}
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <ModelSelector
+              models={models}
+              selectedModelKey={selectedModelKey}
+              activeModelKey={modelsQuery.data.activeModelKey}
+              onSelect={handleModelChange}
+              onSetAsDefault={handleSetAsDefault}
               disabled={modelsQuery.isPending || !models.length}
-            >
-              {modelsQuery.isPending ? (
-                <option value="" disabled>
-                  {tChat("model.loading")}
-                </option>
-              ) : null}
-              {!models.length ? (
-                <option value="" disabled>
-                  {tChat("model.empty")}
-                </option>
-              ) : null}
-              {models.map((model) => (
-                <option
-                  key={model.key}
-                  value={model.key}
-                  className="text-black"
-                >
-                  {`${model.key} · ${model.modelId}`}
-                  {model.key === modelsQuery.data.activeModelKey
-                    ? ` ${tChat("model.isDefault")}`
-                    : ""}
-                </option>
-              ))}
-            </select>
-          </label>
+              isPending={setActiveModelMutation.isPending}
+              isCurrentModelDefault={isCurrentModelDefault}
+            />
 
-          {selectedModelKey && !isCurrentModelDefault && (
-            <button
-              type="button"
-              onClick={handleSetAsDefault}
-              disabled={setActiveModelMutation.isPending}
-              className="flex items-center gap-2 rounded-full border border-blue-400/30 bg-blue-400/10 px-3 py-1 text-xs text-blue-300 transition hover:bg-blue-400/20 disabled:cursor-not-allowed disabled:opacity-50"
-              title={tChat("model.setAsDefault")}
+            {/* MCP Tool Selector */}
+            {mcpServersQuery.data?.servers && (
+              <ToolSelector
+                servers={mcpServersQuery.data.servers}
+                value={selectedTools}
+                onChange={setSelectedTools}
+              />
+            )}
+          </div>
+
+          {/* Input Area */}
+          <motion.div
+            whileFocus={{ scale: 1.01 }}
+            className="group flex items-start gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 shadow-[0_12px_30px_-20px_rgba(59,130,246,0.5)] backdrop-blur-sm transition-all focus-within:border-emerald-500/30 focus-within:shadow-[0_12px_30px_-10px_rgba(16,185,129,0.3)]"
+          >
+            <textarea
+              ref={textareaRef}
+              className="flex-1 resize-none bg-transparent text-sm text-white/90 placeholder:text-white/40 focus:outline-none"
+              placeholder={placeholder}
+              value={inputValue}
+              onChange={handleInputChange}
+              onKeyDown={handleKeyDown}
+              disabled={isBusy}
+              rows={1}
+              style={{
+                minHeight: "1.5rem",
+                maxHeight: "10rem",
+                height: "auto",
+              }}
+              onInput={(e) => {
+                const target = e.target as HTMLTextAreaElement;
+                target.style.height = "auto";
+                target.style.height = `${target.scrollHeight}px`;
+              }}
+            />
+            <motion.button
+              type="submit"
+              disabled={isBusy || !inputValue.trim()}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className={cn(
+                "inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-emerald-400 to-emerald-500 px-5 py-2 text-sm font-semibold text-white shadow-lg transition-all",
+                !isBusy && inputValue.trim()
+                  ? "shadow-emerald-500/25 hover:shadow-xl hover:shadow-emerald-500/40"
+                  : "pointer-events-none opacity-50",
+              )}
             >
-              <svg
-                className="size-3.5"
+              <span>{tChat("send")}</span>
+              <motion.svg
+                className="h-4 w-4"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
+                animate={
+                  !isBusy && inputValue.trim() ? { x: [0, 2, 0] } : { x: 0 }
+                }
+                transition={{
+                  duration: 1,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
               >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
-                  d="M5 13l4 4L19 7"
+                  d="M13 7l5 5m0 0l-5 5m5-5H6"
                 />
-              </svg>
-              <span className="font-semibold uppercase tracking-[0.3em]">
-                {tChat("model.setAsDefault")}
-              </span>
-            </button>
-          )}
-
-          <button
-            type="button"
-            role="switch"
-            aria-checked={isStreamingEnabled && supportsStreaming}
-            aria-disabled={!supportsStreaming}
-            onClick={handleToggleStreaming}
-            className={`flex items-center gap-2 rounded-full border border-white/10 px-3 py-1 transition ${supportsStreaming ? "bg-emerald-400/20 text-emerald-100 hover:bg-emerald-300/30" : "cursor-not-allowed bg-white/10 text-white/40"}`}
-          >
-            <span className="font-semibold uppercase tracking-[0.3em]">
-              {tChat("streaming.label")}
-            </span>
-            <span className="text-sm font-medium">
-              {supportsStreaming
-                ? tChat(isStreamingEnabled ? "streaming.on" : "streaming.off")
-                : tChat("streaming.unsupported")}
-            </span>
-          </button>
-        </div>
-      </header>
-
-      <div className="flex max-h-[420px] flex-col gap-3 overflow-y-auto rounded-2xl border border-white/5 bg-neutral-950/60 p-4">
-        {hasMessages ? (
-          messages.map((message) => (
-            <article
-              key={message.id}
-              className={`flex flex-col gap-1 rounded-2xl border border-white/5 px-4 py-3 text-sm leading-relaxed shadow-[0_8px_20px_-12px_rgba(0,0,0,0.45)] ${message.role === "user" ? "self-end bg-emerald-500/10 text-emerald-100" : "self-start bg-white/10 text-white"}`}
+              </motion.svg>
+            </motion.button>
+          </motion.div>
+          {formError ? (
+            <motion.p
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-xs text-red-300"
             >
-              <span className="text-xs font-semibold uppercase tracking-[0.3em] text-white/40">
-                {message.role === "user"
-                  ? tChat("userLabel")
-                  : tChat("assistantLabel")}
-              </span>
-              <MessageContent content={message.content} role={message.role} />
-            </article>
-          ))
-        ) : (
-          <div className="flex flex-1 items-center justify-center text-sm text-white/40">
-            {tChat("emptyState")}
-          </div>
-        )}
-
-        {isBusy ? (
-          <article className="w-fit rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-sm text-white/90">
-            <span className="inline-flex items-center gap-2">
-              <span className="size-2 animate-pulse rounded-full bg-white/70" />
-              {isStreamingActive
-                ? tChat("status.streaming")
-                : tChat("status.generating")}
-            </span>
-          </article>
-        ) : null}
+              {formError}
+            </motion.p>
+          ) : null}
+        </form>
       </div>
-
-      {mcpServersQuery.data?.servers ? (
-        <ToolSelector
-          servers={mcpServersQuery.data.servers}
-          value={selectedTools}
-          onChange={setSelectedTools}
-        />
-      ) : null}
-
-      <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
-        <div className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 shadow-[0_12px_30px_-20px_rgba(59,130,246,0.5)]">
-          <textarea
-            ref={textareaRef}
-            className="flex-1 resize-none bg-transparent text-sm text-white/90 placeholder:text-white/40 focus:outline-none"
-            placeholder={placeholder}
-            value={inputValue}
-            onChange={handleInputChange}
-            onKeyDown={handleKeyDown}
-            disabled={isBusy}
-            rows={1}
-            style={{
-              minHeight: "1.5rem",
-              maxHeight: "10rem",
-              height: "auto",
-            }}
-            onInput={(e) => {
-              const target = e.target as HTMLTextAreaElement;
-              target.style.height = "auto";
-              target.style.height = `${target.scrollHeight}px`;
-            }}
-          />
-          <button
-            type="submit"
-            disabled={isBusy || !inputValue.trim()}
-            className="inline-flex items-center rounded-full bg-emerald-400 px-4 py-1.5 text-sm font-semibold text-emerald-950 transition hover:bg-emerald-300 disabled:pointer-events-none disabled:opacity-50"
-          >
-            {tChat("send")}
-          </button>
-        </div>
-        {formError ? <p className="text-xs text-red-300">{formError}</p> : null}
-      </form>
-    </section>
+    </motion.section>
   );
 }
