@@ -51,6 +51,8 @@ pnpm install
 
 ## 💻 開發指令
 
+### 本地開發模式
+
 ```bash
 # 開發模式
 pnpm dev              # 同時啟動前後端開發伺服器
@@ -62,12 +64,52 @@ pnpm build           # 建置所有專案
 pnpm test            # 執行所有測試
 pnpm lint            # 程式碼檢查
 pnpm type-check      # 類型檢查
+```
 
-# Docker 操作
+## 🐳 Docker 部署
+
+### 快速啟動
+
+```bash
+# 1. 複製環境變數模板
+cp .env.docker .env.local
+
+# 2. 編輯 .env.local 填入你的 OpenAI API key
+# OPENAI_API_KEY=sk-your-actual-key-here
+
+# 3. 啟動容器
+pnpm docker:up
+
+# 4. 訪問應用程式
+# 前端和後端: http://localhost:8080
+# 健康檢查: http://localhost:8080/health
+# API 文檔: http://localhost:8080/api/docs
+```
+
+### Docker 操作指令
+
+```bash
 pnpm docker:up       # 啟動 Docker 環境
 pnpm docker:down     # 停止 Docker 環境
 pnpm docker:build    # 重新建置映像檔
+
+# 查看容器日誌
+docker logs -f hwdc-mcp-league
+
+# 進入容器 shell
+docker exec -it hwdc-mcp-league sh
 ```
+
+### 環境變數配置
+
+詳細的環境變數說明請參考 `.env.docker` 文件，主要配置項：
+
+- `EXTERNAL_PORT`: 外部訪問端口（預設：8080）
+- `ENVIRONMENT`: 運行環境（development/production/staging/test）
+- `OPENAI_API_KEY`: OpenAI API 金鑰（必填）
+- `CORS_ALLOWED_ORIGINS`: CORS 允許的來源
+- `ENABLE_MCP_SYSTEM`: 是否啟用 MCP 系統
+- `MCP_ENABLED_SERVERS`: 啟用的 MCP 伺服器列表
 
 ## 🤝 貢獻
 
