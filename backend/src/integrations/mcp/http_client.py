@@ -2,29 +2,24 @@
 
 from __future__ import annotations
 
-from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager
-from typing import Any
-
 from mcp.client.streamable_http import streamablehttp_client
 
 from src.core.logging import get_logger
 
+from .http_connection import HTTPMCPConnection
 from .server_params import MCPServerParams
 
 logger = get_logger(__name__)
 
 
-@asynccontextmanager
-async def http_mcp_client(
+async def create_http_mcp_connection(
     params: MCPServerParams,
-) -> AsyncIterator[tuple[Any, Any, Any]]:
+) -> HTTPMCPConnection:
     """
-    Create and connect to a remote HTTP MCP server.
+    Create and connect to a remote HTTP MCP server with persistent session.
 
-    This function provides a context manager for connecting to MCP servers
-    using the HTTP/SSE transport protocol. It uses the official MCP Python SDK's
-    streamablehttp_client implementation.
+    This function establishes a persistent connection to an HTTP/SSE MCP server
+    and returns a connection object that maintains the session state.
 
     Args:
         params: Server parameters containing:
@@ -32,8 +27,8 @@ async def http_mcp_client(
             - auth: Optional authentication configuration
             - timeout_seconds: Connection timeout
 
-    Yields:
-        Tuple of (read_stream, write_stream, session_info) for MCP communication
+    Returns:
+        HTTPMCPConnection object with active session and cached tools
 
     Raises:
         ValueError: If URL is missing or invalid
@@ -42,19 +37,16 @@ async def http_mcp_client(
 
     Example:
         ```python
-        from mcp import ClientSession
-
         params = MCPServerParams(
             name="remote-api",
-            transport=TransportType.HTTP,
+            type="http",
             url="https://api.example.com/mcp",
             auth=HTTPAuthConfig(type="bearer", token="xxx"),
         )
 
-        async with http_mcp_client(params) as (read, write, _):
-            async with ClientSession(read, write) as session:
-                await session.initialize()
-                tools = await session.list_tools()
+        connection = await create_http_mcp_connection(params)
+        # Use connection.session to interact with the server
+        # Remember to call await connection.close() when done
         ```
     """
     if not params.url:
@@ -82,17 +74,50 @@ async def http_mcp_client(
             )
 
     try:
-        # Use the official MCP SDK's streamable HTTP client
-        async with streamablehttp_client(
+        # Create the streamable HTTP client (without using context manager)
+        # We need to manually manage the lifecycle
+        client_context = streamablehttp_client(
             url=params.url,
             headers=headers if headers else None,
             timeout=params.timeout_seconds,
-        ) as (read_stream, write_stream, session_info):
-            logger.info(
-                "Successfully connected to HTTP MCP server '%s'",
-                params.name,
-            )
-            yield read_stream, write_stream, session_info
+            terminate_on_close=False,  # We'll handle termination manually
+        )
+
+        # Enter the context and get the streams
+        read_stream, write_stream, get_session_id = await client_context.__aenter__()
+
+        # Create a ClientSession (also without using context manager)
+        from mcp import ClientSession
+
+        session = ClientSession(read_stream, write_stream)
+        await session.__aenter__()
+
+        # Initialize the session to establish the connection
+        await session.initialize()
+
+        # Get the session ID
+        session_id = get_session_id()
+
+        # List available tools and cache them
+        tools_result = await session.list_tools()
+        tools = tools_result.tools if tools_result.tools else []
+
+        logger.info(
+            "Successfully connected to HTTP MCP server '%s' (Session ID: %s, %s tools)",
+            params.name,
+            session_id,
+            len(tools),
+        )
+
+        # Create and return the connection object
+        return HTTPMCPConnection(
+            session=session,
+            session_id=session_id,
+            tools=tools,
+            read_stream=read_stream,
+            write_stream=write_stream,
+            get_session_id_callback=get_session_id,
+        )
 
     except Exception as exc:
         logger.error(
@@ -102,8 +127,3 @@ async def http_mcp_client(
             exc,
         )
         raise
-    finally:
-        logger.info(
-            "Disconnected from HTTP MCP server '%s'",
-            params.name,
-        )

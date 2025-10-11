@@ -10,7 +10,6 @@ import traceback
 from typing import Any
 
 from agno.tools.mcp import MCPTools
-from mcp import ClientSession
 
 from src.core.logging import get_logger
 from src.models import ReloadAllMCPServersResponse, ReloadMCPServerResponse
@@ -21,7 +20,9 @@ from src.shared.exceptions import (
     MCPServerReloadError,
 )
 
-from .http_client import http_mcp_client
+from .http_client import create_http_mcp_connection
+from .http_connection import HTTPMCPConnection
+from .http_toolkit import HTTPMCPToolkit
 from .server_params import MCPParamsManager, MCPServerParams
 from .toolkit import MCPToolkit
 
@@ -44,8 +45,8 @@ class MCPManager:
             return
 
         self._params_manager = params_manager or MCPParamsManager()
-        # Changed to support both MCPTools (stdio) and dict (http config)
-        self._servers: dict[str, MCPTools | dict[str, Any]] = {}
+        # Support both MCPTools (stdio) and HTTPMCPConnection (http)
+        self._servers: dict[str, MCPTools | HTTPMCPConnection] = {}
         self._configs: list[MCPServerParams] = []
         self._lock = asyncio.Lock()
         self._initialized = False
@@ -165,44 +166,23 @@ class MCPManager:
         logger.info("MCP server '%s' initialised successfully (stdio)", config.name)
 
     async def _initialise_http_server(self, config: MCPServerParams) -> None:
-        """Initialize MCP server using HTTP/SSE transport."""
+        """Initialize MCP server using HTTP/SSE transport with persistent session."""
         logger.debug("URL: %s", config.url)
         logger.debug("Auth type: %s", config.auth.type if config.auth else "none")
         logger.debug("Timeout: %s", config.timeout_seconds)
 
         try:
-            # Connect to HTTP MCP server
-            async with http_mcp_client(config) as (read_stream, write_stream, _):
-                # Create a client session to initialize and get capabilities
-                async with ClientSession(read_stream, write_stream) as session:
-                    # Initialize the session
-                    await session.initialize()
+            # Create persistent HTTP connection
+            connection = await create_http_mcp_connection(config)
 
-                    # Get available tools
-                    tools_result = await session.list_tools()
-                    function_count = (
-                        len(tools_result.tools) if tools_result.tools else 0
-                    )
+            # Store the active connection
+            self._servers[config.name] = connection
 
-                    logger.debug(
-                        "Loaded %s tool(s) from HTTP MCP server '%s'",
-                        function_count,
-                        config.name,
-                    )
-
-                    # Create MCPToolkit wrapper for HTTP server
-                    # Note: We'll need to keep the connection alive
-                    # For now, we'll store the config and establish
-                    # connection on-demand. This is a simplified approach -
-                    # production code would maintain persistent connections
-
-                    # Store config for on-demand connection
-                    # We'll create a special marker to indicate this is HTTP-based
-                    self._servers[config.name] = {"type": "http", "config": config}
-
-                    logger.info(
-                        "MCP server '%s' initialised successfully (HTTP)", config.name
-                    )
+            logger.info(
+                "MCP server '%s' initialised successfully (HTTP, %s tools)",
+                config.name,
+                len(connection.tools),
+            )
 
         except Exception as exc:
             logger.error(
@@ -265,20 +245,20 @@ class MCPManager:
                 info["function_count"],
             )
 
-    def _is_http_server(self, server_data: MCPTools | dict[str, Any]) -> bool:
+    def _is_http_server(self, server_data: MCPTools | HTTPMCPConnection) -> bool:
         """Check if server is HTTP-based."""
-        return isinstance(server_data, dict) and server_data.get("type") == "http"
+        return isinstance(server_data, HTTPMCPConnection)
 
     def _get_stdio_tools(self, server_name: str) -> MCPTools | None:
         """Get MCPTools instance for stdio server."""
         server = self._servers.get(server_name)
         if server and not self._is_http_server(server):
-            return server  # type: ignore
+            return server  # type: ignore[return-value]
         return None
 
     def get_toolkit_for_server(
         self, server_name: str, *, allowed_functions: list[str] | None = None
-    ) -> MCPToolkit | None:
+    ) -> MCPToolkit | HTTPMCPToolkit | None:
         if not self._initialized:
             logger.debug("MCP manager not initialised; cannot provide toolkit")
             return None
@@ -293,12 +273,14 @@ class MCPManager:
             tools: MCPTools = server_data  # type: ignore[assignment]
             return MCPToolkit(server_name, tools, allowed_functions=allowed_functions)
 
-        # For HTTP servers, we need a different approach
-        # TODO: Implement HTTP-based toolkit
-        logger.warning(
-            "HTTP MCP toolkit not yet fully implemented for '%s'", server_name
+        # For HTTP servers, create toolkit from connection
+        connection: HTTPMCPConnection = server_data  # type: ignore[assignment]
+        return HTTPMCPToolkit(
+            server_name,
+            connection.session,
+            connection.tools,
+            allowed_functions=allowed_functions,
         )
-        return None
 
     def get_functions_for_server(self, server_name: str) -> dict[str, Any]:
         server_data = self._servers.get(server_name)
@@ -312,9 +294,16 @@ class MCPManager:
                 return tools.functions
             return {}
 
-        # For HTTP servers, return empty for now
-        # TODO: Implement proper function listing for HTTP servers
-        return {}
+        # For HTTP servers, convert tools to function dict
+        connection: HTTPMCPConnection = server_data  # type: ignore[assignment]
+        functions = {}
+        for tool in connection.tools:
+            functions[tool.name] = {
+                "name": tool.name,
+                "description": tool.description,
+                "inputSchema": tool.inputSchema,
+            }
+        return functions
 
     def _get_server_function_count(self, server_name: str) -> int:
         return len(self.get_functions_for_server(server_name))
@@ -500,8 +489,9 @@ class MCPManager:
 
             # Handle HTTP servers
             if self._is_http_server(server_data):
-                # HTTP servers are stateless, just remove from registry
+                connection: HTTPMCPConnection = server_data  # type: ignore[assignment]
                 logger.debug("Closing HTTP MCP server '%s'", server_name)
+                await connection.close()
                 self._servers.pop(server_name, None)
                 return
 
@@ -585,7 +575,7 @@ def get_mcp_server_functions(server_name: str) -> list[str]:
 
 def get_mcp_toolkit(
     server_name: str, *, allowed_functions: list[str] | None = None
-) -> MCPToolkit | None:
+) -> MCPToolkit | HTTPMCPToolkit | None:
     """Get the toolkit for a specific MCP server."""
     return MCPManager().get_toolkit_for_server(
         server_name, allowed_functions=allowed_functions

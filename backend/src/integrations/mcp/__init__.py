@@ -1,6 +1,8 @@
 """Public API surface for the MCP integration package."""
 
 from .config import MCPSettings, mcp_settings
+from .http_connection import HTTPMCPConnection
+from .http_toolkit import HTTPMCPToolkit
 from .manager import (
     MCPManager,
     get_available_mcp_servers,
@@ -23,6 +25,8 @@ from .toolkit import MCPToolkit
 __all__ = [
     "MCPManager",
     "MCPToolkit",
+    "HTTPMCPToolkit",
+    "HTTPMCPConnection",
     "MCPServerParams",
     "MCPParamsManager",
     "MCPSettings",
