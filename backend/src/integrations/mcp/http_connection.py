@@ -8,6 +8,10 @@ from typing import Any
 from mcp import ClientSession
 from mcp.types import Tool
 
+from src.core.logging import get_logger
+
+logger = get_logger(__name__)
+
 
 @dataclass
 class HTTPMCPConnection:
@@ -24,6 +28,7 @@ class HTTPMCPConnection:
         read_stream: Read stream for receiving messages
         write_stream: Write stream for sending messages
         get_session_id_callback: Callback to retrieve current session ID
+        client_context: The streamablehttp_client context manager (for cleanup)
     """
 
     session: ClientSession
@@ -32,11 +37,18 @@ class HTTPMCPConnection:
     read_stream: Any  # MemoryObjectReceiveStream[SessionMessage | Exception]
     write_stream: Any  # MemoryObjectSendStream[SessionMessage]
     get_session_id_callback: Any  # Callable[[], str | None]
+    client_context: Any  # AsyncContextManager for streamablehttp_client
 
     async def close(self) -> None:
         """Close the HTTP MCP connection gracefully."""
         try:
+            # First exit the ClientSession
             await self.session.__aexit__(None, None, None)
-        except Exception:
-            # Ignore errors during cleanup
-            pass
+        except Exception as exc:
+            logger.warning("Error closing ClientSession: %s", exc)
+
+        try:
+            # Then exit the streamablehttp_client context
+            await self.client_context.__aexit__(None, None, None)
+        except Exception as exc:
+            logger.warning("Error closing HTTP client context: %s", exc)

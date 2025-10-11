@@ -6,6 +6,7 @@ from collections.abc import Collection
 from typing import Any
 
 from agno.tools import Toolkit
+from agno.tools.function import Function
 from mcp import ClientSession
 from mcp.types import CallToolResult, TextContent, Tool
 
@@ -83,7 +84,7 @@ class HTTPMCPToolkit(Toolkit):
                 exc,
             )
 
-    def _create_tool_wrapper(self, tool: Tool) -> Any:
+    def _create_tool_wrapper(self, tool: Tool) -> Function:
         """
         Create a callable wrapper for an MCP tool.
 
@@ -91,10 +92,10 @@ class HTTPMCPToolkit(Toolkit):
             tool: MCP Tool definition
 
         Returns:
-            Async function that calls the tool via the session
+            Agno Function that calls the tool via the session
         """
 
-        async def tool_wrapper(**kwargs: Any) -> str:
+        async def tool_entrypoint(**kwargs: Any) -> str:
             """
             Call the MCP tool with the provided arguments.
 
@@ -139,15 +140,13 @@ class HTTPMCPToolkit(Toolkit):
                 logger.error(error_msg)
                 return error_msg
 
-        # Set function metadata for Agno
-        tool_wrapper.__name__ = tool.name
-        tool_wrapper.__doc__ = tool.description or f"MCP tool: {tool.name}"
-
-        # Store input schema as function attribute if needed
-        if hasattr(tool, "inputSchema"):
-            tool_wrapper.input_schema = tool.inputSchema  # type: ignore[attr-defined]
-
-        return tool_wrapper
+        # Create Agno Function object with proper schema
+        return Function(
+            name=tool.name,
+            description=tool.description or f"MCP tool: {tool.name}",
+            parameters=tool.inputSchema if hasattr(tool, "inputSchema") else {},
+            entrypoint=tool_entrypoint,
+        )
 
     def reload_functions(self) -> None:
         """Reload functions from the current tools list."""

@@ -117,6 +117,7 @@ async def create_http_mcp_connection(
             read_stream=read_stream,
             write_stream=write_stream,
             get_session_id_callback=get_session_id,
+            client_context=client_context,  # Store for proper cleanup
         )
 
     except Exception as exc:
