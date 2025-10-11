@@ -171,26 +171,19 @@ class MCPManager:
         logger.debug("Auth type: %s", config.auth.type if config.auth else "none")
         logger.debug("Timeout: %s", config.timeout_seconds)
 
-        try:
-            # Create persistent HTTP connection
-            connection = await create_http_mcp_connection(config)
+        # Create persistent HTTP connection
+        # Exceptions (MCPConnectionError, MCPConnectionTimeoutError,
+        # MCPInvalidConfigError) will bubble up to _handle_initialization_error
+        connection = await create_http_mcp_connection(config)
 
-            # Store the active connection
-            self._servers[config.name] = connection
+        # Store the active connection
+        self._servers[config.name] = connection
 
-            logger.info(
-                "MCP server '%s' initialised successfully (HTTP, %s tools)",
-                config.name,
-                len(connection.tools),
-            )
-
-        except Exception as exc:
-            logger.error(
-                "Failed to initialize HTTP MCP server '%s': %s",
-                config.name,
-                exc,
-            )
-            raise
+        logger.info(
+            "MCP server '%s' initialised successfully (HTTP, %s tools)",
+            config.name,
+            len(connection.tools),
+        )
 
     def _handle_initialization_error(
         self, config: MCPServerParams, error: Exception

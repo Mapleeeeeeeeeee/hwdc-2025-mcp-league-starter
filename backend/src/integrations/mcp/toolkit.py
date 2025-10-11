@@ -32,38 +32,31 @@ class MCPToolkit(Toolkit):
         self._load_functions()
 
     def _load_functions(self) -> None:
-        try:
-            functions = getattr(self._mcp_tools, "functions", {})
-            if not functions:
-                logger.debug(
-                    "No MCP functions exposed by server '%s'",
-                    self.server_name,
-                )
-                return
-
-            for func_name, func in functions.items():
-                if self._allowed is not None and func_name not in self._allowed:
-                    continue
-
-                self.functions[func_name] = func
-                logger.debug(
-                    "Registered MCP function %s.%s",
-                    self.server_name,
-                    func_name,
-                )
-
-            logger.info(
-                "MCP toolkit '%s' loaded %s function(s)",
-                self.name,
-                len(self.functions),
-            )
-
-        except Exception as exc:  # pragma: no cover - defensive logging
-            logger.error(
-                "Error while loading MCP functions for server '%s': %s",
+        """Load functions from MCPTools instance into this toolkit."""
+        functions = getattr(self._mcp_tools, "functions", {})
+        if not functions:
+            logger.debug(
+                "No MCP functions exposed by server '%s'",
                 self.server_name,
-                exc,
             )
+            return
+
+        for func_name, func in functions.items():
+            if self._allowed is not None and func_name not in self._allowed:
+                continue
+
+            self.functions[func_name] = func
+            logger.debug(
+                "Registered MCP function %s.%s",
+                self.server_name,
+                func_name,
+            )
+
+        logger.info(
+            "MCP toolkit '%s' loaded %s function(s)",
+            self.name,
+            len(self.functions),
+        )
 
     def reload_functions(self) -> None:
         self.functions.clear()

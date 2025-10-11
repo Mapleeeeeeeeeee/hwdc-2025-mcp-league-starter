@@ -52,38 +52,30 @@ class HTTPMCPToolkit(Toolkit):
 
     def _load_functions(self) -> None:
         """Load and wrap MCP tools as callable functions."""
-        try:
-            if not self._tools:
-                logger.debug(
-                    "No MCP tools exposed by HTTP server '%s'",
-                    self.server_name,
-                )
-                return
-
-            for tool in self._tools:
-                if self._allowed is not None and tool.name not in self._allowed:
-                    continue
-
-                # Create a wrapper function for this tool
-                self.functions[tool.name] = self._create_tool_wrapper(tool)
-                logger.debug(
-                    "Registered HTTP MCP tool %s.%s",
-                    self.server_name,
-                    tool.name,
-                )
-
-            logger.info(
-                "HTTP MCP toolkit '%s' loaded %s tool(s)",
-                self.name,
-                len(self.functions),
-            )
-
-        except Exception as exc:
-            logger.error(
-                "Error while loading HTTP MCP tools for server '%s': %s",
+        if not self._tools:
+            logger.debug(
+                "No MCP tools exposed by HTTP server '%s'",
                 self.server_name,
-                exc,
             )
+            return
+
+        for tool in self._tools:
+            if self._allowed is not None and tool.name not in self._allowed:
+                continue
+
+            # Create a wrapper function for this tool
+            self.functions[tool.name] = self._create_tool_wrapper(tool)
+            logger.debug(
+                "Registered HTTP MCP tool %s.%s",
+                self.server_name,
+                tool.name,
+            )
+
+        logger.info(
+            "HTTP MCP toolkit '%s' loaded %s tool(s)",
+            self.name,
+            len(self.functions),
+        )
 
     def _create_tool_wrapper(self, tool: Tool) -> Function:
         """
