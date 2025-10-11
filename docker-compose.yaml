@@ -23,11 +23,7 @@ services:
 
       # MCP Configuration
       - ENABLE_MCP_SYSTEM=${ENABLE_MCP_SYSTEM:-true}
-      - MCP_NPX_COMMAND=npx
-      - MCP_BASE_PATH=.
-      - MCP_NODE_ENV=${MCP_NODE_ENV:-development}
       - MCP_TIMEOUT_SECONDS=60
-      - MCP_ENABLED_SERVERS=${MCP_ENABLED_SERVERS:-}
 
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
