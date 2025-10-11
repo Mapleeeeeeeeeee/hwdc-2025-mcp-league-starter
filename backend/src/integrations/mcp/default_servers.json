@@ -1,6 +1,7 @@
 {
   "mcpServers": {
     "filesystem": {
+      "type": "stdio",
       "command": "npx",
       "args": [
         "-y",
@@ -13,6 +14,7 @@
       "description": "Filesystem browsing tools"
     },
     "Context7": {
+      "type": "stdio",
       "command": "npx",
       "args": [
         "-y",
@@ -24,6 +26,7 @@
       "description": "Context7 documentation tools"
     },
     "ms365": {
+      "type": "stdio",
       "command": "npx",
       "args": [
         "-y",
@@ -33,6 +36,24 @@
       "timeout_seconds": 300,
       "enabled": true,
       "description": "Microsoft 365 services integration (personal mode)"
+    },
+    "_example_http_server": {
+      "type": "http",
+      "url": "https://api.example.com/mcp",
+      "auth": {
+        "type": "bearer",
+        "token": "your-api-token-here"
+      },
+      "timeout_seconds": 60,
+      "enabled": false,
+      "description": "Example HTTP MCP server (disabled by default)"
+    },
+    "_example_http_no_auth": {
+      "type": "http",
+      "url": "http://localhost:8000/mcp",
+      "timeout_seconds": 30,
+      "enabled": false,
+      "description": "Example local HTTP MCP server without authentication"
     }
   }
 }

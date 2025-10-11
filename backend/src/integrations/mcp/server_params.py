@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import subprocess
 from dataclasses import dataclass
+from enum import Enum
 from pathlib import Path
 from typing import Any
 
@@ -15,24 +16,64 @@ from .config import MCPSettings, mcp_settings
 logger = get_logger(__name__)
 
 
+class TransportType(str, Enum):
+    """MCP transport types."""
+
+    STDIO = "stdio"
+    HTTP = "http"
+    SSE = "sse"  # Alias for HTTP with SSE
+
+
+@dataclass(slots=True)
+class HTTPAuthConfig:
+    """HTTP authentication configuration."""
+
+    type: str = "bearer"  # bearer, api_key, etc.
+    token: str | None = None
+    header_name: str = "Authorization"  # For custom header names
+
+
 @dataclass(slots=True)
 class MCPServerParams:
-    """Descriptor for an MCP server process."""
+    """Descriptor for an MCP server process or HTTP endpoint."""
 
     name: str
-    command: str
+    transport: TransportType = TransportType.STDIO
+
+    # For stdio transport
+    command: str | None = None
     args: list[str] | None = None
     env: dict[str, str] | None = None
+
+    # For HTTP/SSE transport
+    url: str | None = None
+    auth: HTTPAuthConfig | None = None
+
+    # Common settings
     timeout_seconds: int = 60
     enabled: bool = True
     description: str = ""
 
+    def is_http_transport(self) -> bool:
+        """Check if this server uses HTTP/SSE transport."""
+        return self.transport in (TransportType.HTTP, TransportType.SSE)
+
+    def is_stdio_transport(self) -> bool:
+        """Check if this server uses stdio transport."""
+        return self.transport == TransportType.STDIO
+
     def get_full_command(self) -> str:
+        """Get the full command string for stdio transport."""
+        if not self.command:
+            return ""
         if self.args:
             return f"{self.command} {' '.join(self.args)}"
         return self.command
 
     def get_command_list(self) -> list[str]:
+        """Get the command as a list for stdio transport."""
+        if not self.command:
+            return []
         if self.args:
             return [self.command, *self.args]
         return self.command.split()
@@ -133,11 +174,22 @@ class MCPParamsManager:
             logger.warning("MCP server entry missing 'name'")
             return None
 
-        command = data.get("command")
-        if not isinstance(command, str) or not command.strip():
-            logger.warning("MCP server '%s' missing command", name)
-            return None
+        # Determine transport type from 'type' field (preferred)
+        # or 'transport' field (fallback)
+        transport_str = data.get("type") or data.get("transport", "stdio")
+        transport_str = str(transport_str).lower()
 
+        try:
+            transport = TransportType(transport_str)
+        except ValueError:
+            logger.warning(
+                "Invalid transport type '%s' for MCP server '%s'; using stdio",
+                transport_str,
+                name,
+            )
+            transport = TransportType.STDIO
+
+        # Common settings
         enabled_flag = data.get("enabled", True)
         enabled = bool(enabled_flag)
 
@@ -152,6 +204,32 @@ class MCPParamsManager:
             )
             timeout_seconds = self.settings.timeout_seconds
 
+        description = str(data.get("description", "")).strip()
+
+        # Parse based on transport type
+        if transport in (TransportType.HTTP, TransportType.SSE):
+            return self._create_http_params(
+                name, transport, data, timeout_seconds, enabled, description
+            )
+        else:
+            return self._create_stdio_params(
+                name, data, timeout_seconds, enabled, description
+            )
+
+    def _create_stdio_params(
+        self,
+        name: str,
+        data: dict[str, Any],
+        timeout_seconds: int,
+        enabled: bool,
+        description: str,
+    ) -> MCPServerParams | None:
+        """Create params for stdio transport."""
+        command = data.get("command")
+        if not isinstance(command, str) or not command.strip():
+            logger.warning("MCP server '%s' missing command for stdio transport", name)
+            return None
+
         env_config = data.get("env") or {}
         if not isinstance(env_config, dict):
             logger.warning("Invalid env mapping for MCP server '%s'", name)
@@ -165,10 +243,9 @@ class MCPParamsManager:
             logger.warning("Ignoring non-list args for MCP server '%s'", name)
             args = None
 
-        description = str(data.get("description", "")).strip()
-
-        params = MCPServerParams(
+        return MCPServerParams(
             name=name,
+            transport=TransportType.STDIO,
             command=command,
             args=args,
             env=env,
@@ -177,16 +254,69 @@ class MCPParamsManager:
             description=description,
         )
 
-        return params
+    def _create_http_params(
+        self,
+        name: str,
+        transport: TransportType,
+        data: dict[str, Any],
+        timeout_seconds: int,
+        enabled: bool,
+        description: str,
+    ) -> MCPServerParams | None:
+        """Create params for HTTP/SSE transport."""
+        url = data.get("url")
+        if not isinstance(url, str) or not url.strip():
+            logger.warning("MCP server '%s' missing URL for HTTP transport", name)
+            return None
+
+        # Parse authentication config
+        auth_config = None
+        auth_data = data.get("auth")
+        if isinstance(auth_data, dict):
+            auth_type = auth_data.get("type", "bearer")
+            token = auth_data.get("token")
+            header_name = auth_data.get("header_name", "Authorization")
+
+            if token:
+                auth_config = HTTPAuthConfig(
+                    type=str(auth_type),
+                    token=str(token),
+                    header_name=str(header_name),
+                )
+            else:
+                logger.warning(
+                    "MCP server '%s' has auth config but missing token",
+                    name,
+                )
+
+        return MCPServerParams(
+            name=name,
+            transport=transport,
+            url=url.strip(),
+            auth=auth_config,
+            timeout_seconds=timeout_seconds,
+            enabled=enabled,
+            description=description,
+        )
 
     def validate_config(self, config: MCPServerParams) -> bool:
         if not config.name:
             logger.error("MCP configuration missing server name")
             return False
 
-        if not config.command:
-            logger.error("MCP configuration %s missing command", config.name)
-            return False
+        if config.is_stdio_transport():
+            if not config.command:
+                logger.error(
+                    "MCP configuration %s missing command for stdio transport",
+                    config.name,
+                )
+                return False
+        elif config.is_http_transport():
+            if not config.url:
+                logger.error(
+                    "MCP configuration %s missing URL for HTTP transport", config.name
+                )
+                return False
 
         if config.timeout_seconds <= 0:
             logger.warning(
