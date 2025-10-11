@@ -12,7 +12,6 @@ class MCPSettings(BaseSettings):
     """Runtime configuration for MCP server orchestration."""
 
     enable_mcp_system: bool = Field(default=False, alias="ENABLE_MCP_SYSTEM")
-    npx_command: str = Field(default="npx", alias="MCP_NPX_COMMAND")
     base_path: Path = Field(default=Path("."), alias="MCP_BASE_PATH")
     node_env: str = Field(default="development", alias="MCP_NODE_ENV")
     timeout_seconds: int = Field(default=60, alias="MCP_TIMEOUT_SECONDS")

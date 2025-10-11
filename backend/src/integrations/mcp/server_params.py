@@ -45,9 +45,6 @@ class MCPParamsManager:
     def __init__(self, settings: MCPSettings | None = None) -> None:
         self.settings = settings or mcp_settings
 
-    def get_platform_command(self, base_cmd: str) -> str:
-        return base_cmd.replace("npx", self.settings.npx_command, 1)
-
     def get_default_params(self) -> list[MCPServerParams]:
         configs: list[MCPServerParams] = []
 
@@ -61,12 +58,6 @@ class MCPParamsManager:
         for item in configs:
             deduped[item.name] = item
         configs = list(deduped.values())
-
-        for config in configs:
-            if config.args:
-                config.command = self.settings.npx_command
-            else:
-                config.command = self.get_platform_command(config.command)
 
         logger.info("Loaded %s MCP server configuration(s)", len(configs))
         logger.debug(
@@ -230,7 +221,7 @@ class MCPParamsManager:
 
         try:
             result = subprocess.run(
-                [self.settings.npx_command, "--version"],
+                ["npx", "--version"],
                 capture_output=True,
                 text=True,
                 timeout=10,
@@ -238,24 +229,13 @@ class MCPParamsManager:
             if result.returncode == 0:
                 requirements["nodejs"] = True
                 requirements["npx"] = True
-                logger.info(
-                    "%s version: %s",
-                    self.settings.npx_command,
-                    result.stdout.strip(),
-                )
+                logger.info("npx version: %s", result.stdout.strip())
             else:
-                logger.warning(
-                    "%s version check failed: %s",
-                    self.settings.npx_command,
-                    result.stderr,
-                )
+                logger.warning("npx version check failed: %s", result.stderr)
         except FileNotFoundError:
-            logger.error(
-                "%s command not found; ensure Node.js is installed",
-                self.settings.npx_command,
-            )
+            logger.error("npx command not found; ensure Node.js is installed")
         except Exception as exc:  # pragma: no cover - defensive logging
-            logger.warning("Unable to verify %s: %s", self.settings.npx_command, exc)
+            logger.warning("Unable to verify npx: %s", exc)
 
         return requirements
 
