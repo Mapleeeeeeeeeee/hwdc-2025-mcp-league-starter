@@ -24,13 +24,47 @@ class TransportType(str, Enum):
     SSE = "sse"  # Alias for HTTP with SSE
 
 
+class AuthType(str, Enum):
+    """HTTP authentication types."""
+
+    BEARER = "bearer"
+    API_KEY = "api_key"
+
+
 @dataclass(slots=True)
 class HTTPAuthConfig:
     """HTTP authentication configuration."""
 
-    type: str = "bearer"  # bearer, api_key, etc.
+    type: AuthType = AuthType.BEARER
     token: str | None = None
     header_name: str = "Authorization"  # For custom header names
+
+    def __post_init__(self) -> None:
+        """Validate authentication configuration."""
+        if not self.token or not self.token.strip():
+            raise ValueError("Auth token cannot be empty")
+        if not self.header_name or not self.header_name.strip():
+            raise ValueError("Header name cannot be empty")
+
+    def build_header(self) -> dict[str, str]:
+        """
+        Build authentication header based on type.
+
+        Returns:
+            Dictionary with authentication header
+
+        Raises:
+            ValueError: If auth type is not supported or token is None
+        """
+        if not self.token:
+            raise ValueError("Cannot build header: token is None")
+
+        if self.type == AuthType.BEARER:
+            return {self.header_name: f"Bearer {self.token}"}
+        elif self.type == AuthType.API_KEY:
+            return {self.header_name: self.token}
+        else:
+            raise ValueError(f"Unsupported auth type: {self.type}")
 
 
 @dataclass(slots=True)
@@ -273,13 +307,24 @@ class MCPParamsManager:
         auth_config = None
         auth_data = data.get("auth")
         if isinstance(auth_data, dict):
-            auth_type = auth_data.get("type", "bearer")
+            auth_type_str = str(auth_data.get("type", "bearer")).lower()
             token = auth_data.get("token")
             header_name = auth_data.get("header_name", "Authorization")
 
             if token:
+                # Convert string to AuthType enum
+                try:
+                    auth_type = AuthType(auth_type_str)
+                except ValueError:
+                    logger.warning(
+                        "Invalid auth type '%s' for MCP server '%s'; using bearer",
+                        auth_type_str,
+                        name,
+                    )
+                    auth_type = AuthType.BEARER
+
                 auth_config = HTTPAuthConfig(
-                    type=str(auth_type),
+                    type=auth_type,
                     token=str(token),
                     header_name=str(header_name),
                 )

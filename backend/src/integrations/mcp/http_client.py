@@ -2,14 +2,27 @@
 
 from __future__ import annotations
 
+import httpx
+from mcp import ClientSession
 from mcp.client.streamable_http import streamablehttp_client
 
 from src.core.logging import get_logger
+from src.shared.exceptions.mcp import (
+    MCPConnectionError,
+    MCPConnectionTimeoutError,
+    MCPInvalidConfigError,
+)
 
 from .http_connection import HTTPMCPConnection
 from .server_params import MCPServerParams
 
 logger = get_logger(__name__)
+
+# Constants for HTTP client configuration
+_HTTP_CLIENT_TERMINATE_ON_CLOSE = (
+    False  # Manual lifecycle management for persistent connections
+)
+_HTTP_CLIENT_DEFAULT_TIMEOUT = 60  # Default timeout in seconds
 
 
 async def create_http_mcp_connection(
@@ -31,9 +44,9 @@ async def create_http_mcp_connection(
         HTTPMCPConnection object with active session and cached tools
 
     Raises:
-        ValueError: If URL is missing or invalid
-        httpx.HTTPError: If connection fails
-        asyncio.TimeoutError: If connection times out
+        MCPInvalidConfigError: If URL is missing or configuration is invalid
+        MCPConnectionError: If HTTP connection fails
+        MCPConnectionTimeoutError: If connection times out
 
     Example:
         ```python
@@ -50,8 +63,10 @@ async def create_http_mcp_connection(
         ```
     """
     if not params.url:
-        msg = f"HTTP MCP client for '{params.name}' requires a URL"
-        raise ValueError(msg)
+        raise MCPInvalidConfigError(
+            server_name=params.name,
+            reason="HTTP transport requires a URL",
+        )
 
     logger.info(
         "Connecting to HTTP MCP server '%s' at %s",
@@ -61,16 +76,14 @@ async def create_http_mcp_connection(
 
     # Build headers for authentication
     headers: dict[str, str] = {}
-    if params.auth and params.auth.token:
-        if params.auth.type == "bearer":
-            headers[params.auth.header_name] = f"Bearer {params.auth.token}"
-        elif params.auth.type == "api_key":
-            headers[params.auth.header_name] = params.auth.token
-        else:
+    if params.auth:
+        try:
+            headers.update(params.auth.build_header())
+        except ValueError as exc:
             logger.warning(
-                "Unknown auth type '%s' for MCP server '%s', skipping auth",
-                params.auth.type,
+                "Failed to build auth header for MCP server '%s': %s",
                 params.name,
+                exc,
             )
 
     try:
@@ -79,16 +92,14 @@ async def create_http_mcp_connection(
         client_context = streamablehttp_client(
             url=params.url,
             headers=headers if headers else None,
-            timeout=params.timeout_seconds,
-            terminate_on_close=False,  # We'll handle termination manually
+            timeout=params.timeout_seconds or _HTTP_CLIENT_DEFAULT_TIMEOUT,
+            terminate_on_close=_HTTP_CLIENT_TERMINATE_ON_CLOSE,
         )
 
         # Enter the context and get the streams
         read_stream, write_stream, get_session_id = await client_context.__aenter__()
 
         # Create a ClientSession (also without using context manager)
-        from mcp import ClientSession
-
         session = ClientSession(read_stream, write_stream)
         await session.__aenter__()
 
@@ -120,11 +131,51 @@ async def create_http_mcp_connection(
             client_context=client_context,  # Store for proper cleanup
         )
 
-    except Exception as exc:
+    except ValueError as exc:
+        # Configuration or validation errors
         logger.error(
-            "Failed to connect to HTTP MCP server '%s' at %s: %s",
+            "Invalid configuration for HTTP MCP server '%s': %s",
+            params.name,
+            exc,
+        )
+        raise MCPInvalidConfigError(
+            server_name=params.name,
+            reason=str(exc),
+        ) from exc
+    except TimeoutError as exc:
+        # Connection timeout
+        logger.error(
+            "Connection to HTTP MCP server '%s' at %s timed out",
+            params.name,
+            params.url,
+        )
+        raise MCPConnectionTimeoutError(
+            server_name=params.name,
+            transport="http",
+            timeout_seconds=params.timeout_seconds,
+        ) from exc
+    except httpx.HTTPError as exc:
+        # HTTP connection errors (network issues, HTTP errors, etc.)
+        logger.error(
+            "HTTP connection error for MCP server '%s' at %s: %s",
             params.name,
             params.url,
             exc,
         )
-        raise
+        raise MCPConnectionError(
+            server_name=params.name,
+            transport="http",
+            reason=str(exc),
+        ) from exc
+    except Exception as exc:
+        # Unexpected errors
+        logger.exception(
+            "Unexpected error connecting to HTTP MCP server '%s' at %s",
+            params.name,
+            params.url,
+        )
+        raise MCPConnectionError(
+            server_name=params.name,
+            transport="http",
+            reason=f"Unexpected error: {exc}",
+        ) from exc

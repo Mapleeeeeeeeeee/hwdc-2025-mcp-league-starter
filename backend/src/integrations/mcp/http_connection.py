@@ -2,13 +2,19 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
+from contextlib import AbstractAsyncContextManager
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from mcp import ClientSession
 from mcp.types import Tool
 
 from src.core.logging import get_logger
+
+if TYPE_CHECKING:
+    from anyio.streams.memory import MemoryObjectReceiveStream, MemoryObjectSendStream
+    from mcp.shared.session import SessionMessage
 
 logger = get_logger(__name__)
 
@@ -34,10 +40,12 @@ class HTTPMCPConnection:
     session: ClientSession
     session_id: str | None
     tools: list[Tool]
-    read_stream: Any  # MemoryObjectReceiveStream[SessionMessage | Exception]
-    write_stream: Any  # MemoryObjectSendStream[SessionMessage]
-    get_session_id_callback: Any  # Callable[[], str | None]
-    client_context: Any  # AsyncContextManager for streamablehttp_client
+    read_stream: MemoryObjectReceiveStream[SessionMessage | Exception]
+    write_stream: MemoryObjectSendStream[SessionMessage]
+    get_session_id_callback: Callable[[], str | None]
+    client_context: AbstractAsyncContextManager[
+        tuple[Any, Any, Callable[[], str | None]]
+    ]
 
     async def close(self) -> None:
         """Close the HTTP MCP connection gracefully."""

@@ -11,6 +11,7 @@ from mcp import ClientSession
 from mcp.types import CallToolResult, TextContent, Tool
 
 from src.core.logging import get_logger
+from src.shared.exceptions.mcp import MCPToolExecutionError
 
 logger = get_logger(__name__)
 
@@ -133,12 +134,28 @@ class HTTPMCPToolkit(Toolkit):
 
                 return "Tool executed successfully (no output)"
 
-            except Exception as exc:
+            except TimeoutError as exc:
+                # Tool execution timeout
                 error_msg = (
-                    f"Error calling HTTP MCP tool {self.server_name}.{tool.name}: {exc}"
+                    f"Tool '{tool.name}' on server '{self.server_name}' timed out"
                 )
                 logger.error(error_msg)
-                return error_msg
+                raise MCPToolExecutionError(
+                    server_name=self.server_name,
+                    tool_name=tool.name,
+                    reason="Execution timed out",
+                ) from exc
+            except Exception as exc:
+                # Other tool execution errors
+                error_msg = (
+                    f"Tool '{tool.name}' on server '{self.server_name}' failed: {exc}"
+                )
+                logger.error(error_msg)
+                raise MCPToolExecutionError(
+                    server_name=self.server_name,
+                    tool_name=tool.name,
+                    reason=str(exc),
+                ) from exc
 
         # Create Agno Function object with proper schema
         return Function(
