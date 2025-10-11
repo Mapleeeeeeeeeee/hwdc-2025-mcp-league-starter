@@ -124,11 +124,12 @@ class MCPManager:
 
     async def _initialise_single_server(self, config: MCPServerParams) -> None:
         logger.info("Initialising MCP server '%s'", config.name)
-        logger.debug("Command: %s", config.command)
+        full_command = config.get_full_command()
+        logger.debug("Command: %s", full_command)
         logger.debug("Environment: %s", config.env)
         logger.debug("Timeout: %s", config.timeout_seconds)
 
-        mcp_kwargs: dict[str, Any] = {"command": config.command}
+        mcp_kwargs: dict[str, Any] = {"command": full_command}
 
         if config.env:
             mcp_kwargs["env"] = config.env
