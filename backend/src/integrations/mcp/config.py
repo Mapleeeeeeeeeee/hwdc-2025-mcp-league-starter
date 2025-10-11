@@ -12,8 +12,6 @@ class MCPSettings(BaseSettings):
     """Runtime configuration for MCP server orchestration."""
 
     enable_mcp_system: bool = Field(default=False, alias="ENABLE_MCP_SYSTEM")
-    base_path: Path = Field(default=Path("."), alias="MCP_BASE_PATH")
-    node_env: str = Field(default="development", alias="MCP_NODE_ENV")
     timeout_seconds: int = Field(default=60, alias="MCP_TIMEOUT_SECONDS")
     servers_config_file: Path | None = Field(
         default=Path("config/mcp_servers.json"),
@@ -26,17 +24,6 @@ class MCPSettings(BaseSettings):
         case_sensitive=False,
         extra="ignore",
     )
-
-    @field_validator("base_path", mode="before")
-    @classmethod
-    def _normalise_base_path(cls, value: str | Path) -> Path:
-        """Ensure base paths are resolved inside the project directory."""
-        path = Path(value).expanduser()
-        if not path.is_absolute():
-            path = (Path.cwd() / path).resolve()
-        else:
-            path = path.resolve()
-        return path
 
     @field_validator("servers_config_file", mode="before")
     @classmethod

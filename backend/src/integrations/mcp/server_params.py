@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import platform
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
@@ -60,11 +59,6 @@ class MCPParamsManager:
         configs = list(deduped.values())
 
         logger.info("Loaded %s MCP server configuration(s)", len(configs))
-        logger.debug(
-            "Platform: %s | base path: %s",
-            platform.system(),
-            self.settings.base_path,
-        )
 
         if not configs:
             logger.warning("No MCP server configurations available")
@@ -143,11 +137,6 @@ class MCPParamsManager:
         if not isinstance(command, str) or not command.strip():
             logger.warning("MCP server '%s' missing command", name)
             return None
-
-        command = command.replace(
-            "{BASE_PATH}",
-            self._format_base_path(self.settings.base_path),
-        )
 
         enabled_flag = data.get("enabled", True)
         enabled = bool(enabled_flag)
@@ -238,10 +227,6 @@ class MCPParamsManager:
             logger.warning("Unable to verify npx: %s", exc)
 
         return requirements
-
-    @staticmethod
-    def _format_base_path(path: Path) -> str:
-        return str(path)
 
 
 default_params_manager = MCPParamsManager()

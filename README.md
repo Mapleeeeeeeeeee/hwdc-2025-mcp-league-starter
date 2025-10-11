@@ -109,7 +109,6 @@ docker exec -it hwdc-mcp-league sh
 - `OPENAI_API_KEY`: OpenAI API 金鑰（必填）
 - `CORS_ALLOWED_ORIGINS`: CORS 允許的來源
 - `ENABLE_MCP_SYSTEM`: 是否啟用 MCP 系統
-- `MCP_ENABLED_SERVERS`: 啟用的 MCP 伺服器列表
 
 ## 🤝 貢獻
 
