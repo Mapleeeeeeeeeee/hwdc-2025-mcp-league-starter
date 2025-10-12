@@ -4,6 +4,15 @@ import { config } from "../config";
 
 type RequestOptions = RequestInit & {
   parseJson?: boolean;
+  /**
+   * Request timeout in milliseconds.
+   * @default 120000 (120 seconds)
+   *
+   * This timeout is particularly important for long-running operations
+   * such as MCP peer-to-peer communication where processing time can exceed
+   * browser defaults (typically 60s).
+   */
+  timeout?: number;
 };
 
 /**
@@ -24,54 +33,108 @@ function buildUrl(path: string): string {
 
 export async function apiRequest<T>(
   path: string,
-  { parseJson = true, ...init }: RequestOptions = {},
+  { parseJson = true, timeout = 120000, signal, ...init }: RequestOptions = {},
 ): Promise<T> {
   const url = buildUrl(path);
-  const response = await fetch(url, {
-    cache: "no-store",
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-      ...(init?.headers ?? {}),
-    },
-    ...init,
-  });
 
-  if (!parseJson) {
-    return response as unknown as T;
-  }
+  // Create AbortController for timeout
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => {
+    controller.abort();
+  }, timeout);
 
-  let payload: ApiResponse<T> | null = null;
+  // Merge caller's signal with timeout signal
+  const mergedSignal = signal
+    ? createMergedSignal(signal, controller.signal)
+    : controller.signal;
 
   try {
-    payload = (await response.json()) as ApiResponse<T>;
+    const response = await fetch(url, {
+      cache: "no-store",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        ...(init?.headers ?? {}),
+      },
+      signal: mergedSignal,
+      ...init,
+    });
+
+    if (!parseJson) {
+      return response as unknown as T;
+    }
+
+    let payload: ApiResponse<T> | null = null;
+
+    try {
+      payload = (await response.json()) as ApiResponse<T>;
+    } catch (error) {
+      if (config.isDevelopment) {
+        console.error("Failed to parse API response", { url, error });
+      }
+      throw new ApiError(
+        response.status,
+        "InvalidJsonResponse",
+        undefined,
+        undefined,
+      );
+    }
+
+    if (!response.ok || !payload?.success) {
+      if (payload && "success" in payload && !payload.success) {
+        throw ApiError.fromPayload(response.status, payload);
+      }
+
+      throw new ApiError(
+        response.status,
+        "UnknownApiError",
+        payload?.trace_id,
+        payload && "message" in payload ? payload.message : undefined,
+      );
+    }
+
+    return payload.data;
   } catch (error) {
-    if (config.isDevelopment) {
-      console.error("Failed to parse API response", { url, error });
+    // Enhance AbortError with timeout information
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new ApiError(
+        408,
+        "RequestTimeout",
+        undefined,
+        `Request timed out after ${timeout}ms. This may occur during long-running operations.`,
+      );
     }
-    throw new ApiError(
-      response.status,
-      "InvalidJsonResponse",
-      undefined,
-      undefined,
-    );
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+/**
+ * Creates a merged AbortSignal that aborts when either signal aborts.
+ * Returns the timeout signal if caller signal is already aborted.
+ */
+function createMergedSignal(
+  callerSignal: AbortSignal,
+  timeoutSignal: AbortSignal,
+): AbortSignal {
+  // If caller already aborted, return timeout signal
+  if (callerSignal.aborted) {
+    return callerSignal;
   }
 
-  if (!response.ok || !payload?.success) {
-    if (payload && "success" in payload && !payload.success) {
-      throw ApiError.fromPayload(response.status, payload);
-    }
+  // Create new controller that listens to both signals
+  const mergedController = new AbortController();
 
-    throw new ApiError(
-      response.status,
-      "UnknownApiError",
-      payload?.trace_id,
-      payload && "message" in payload ? payload.message : undefined,
-    );
-  }
+  const abortHandler = () => {
+    mergedController.abort();
+  };
 
-  return payload.data;
+  callerSignal.addEventListener("abort", abortHandler, { once: true });
+  timeoutSignal.addEventListener("abort", abortHandler, { once: true });
+
+  return mergedController.signal;
 }
 
 // Convenience methods for better developer experience

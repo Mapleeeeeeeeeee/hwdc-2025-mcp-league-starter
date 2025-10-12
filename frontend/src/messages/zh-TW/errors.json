@@ -1,5 +1,6 @@
 {
   "generic": "發生未知錯誤，請稍後再試。",
+  "requestTimeout": "請求處理時間過長，已超時。這可能是因為系統正在執行複雜的操作，請稍後再試。",
   "mcp": {
     "unreachable": "無法連線到 MCP 伺服器：{server}",
     "notInitialized": "MCP 系統尚未完成初始化。"

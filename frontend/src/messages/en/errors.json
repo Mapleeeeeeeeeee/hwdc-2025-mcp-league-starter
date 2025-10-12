@@ -1,5 +1,6 @@
 {
   "generic": "Something went wrong. Please try again later.",
+  "requestTimeout": "The request took too long and timed out. This may happen during complex operations. Please try again later.",
   "mcp": {
     "unreachable": "Unable to reach MCP server: {server}",
     "notInitialized": "The MCP system has not finished initialising yet."
