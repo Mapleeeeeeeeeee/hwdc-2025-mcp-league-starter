@@ -65,7 +65,10 @@ app.include_router(conversation_router, prefix="/api/v1")
 app.include_router(mcp_router, prefix="/api/v1")
 
 # Mount FastMCP server at /mcp endpoint for peer-to-peer MCP communication
-# This allows other containers to connect to this instance as an MCP server
+# Authentication is configured in mcp_server initialization
+# (see src/integrations/mcp/server.py)
+# IMPORTANT: MCP_SERVER_AUTH_TOKEN is REQUIRED
+# FastMCP will enforce bearer token authentication
 app.mount("/mcp", mcp_server.http_app())
 
 

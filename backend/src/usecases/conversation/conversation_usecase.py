@@ -8,7 +8,10 @@ from uuid import uuid4
 from agno.agent import RunContentEvent, RunErrorEvent, RunOutput
 
 from src.core import get_logger
-from src.integrations.mcp import get_mcp_toolkit
+from src.integrations.mcp import (
+    get_available_mcp_servers,
+    get_mcp_toolkit,
+)
 from src.models import MCPToolSelection
 from src.shared.exceptions.llm import LLMNoOutputError, LLMStreamError
 
@@ -105,6 +108,35 @@ class ConversationUsecase:
         agent,
         selections: list[MCPToolSelection] | None,
     ) -> None:
+        # ⭐ When selections is None, auto-attach all available MCP servers
+        if selections is None:
+            self._logger.info(
+                "No tool selection provided, auto-attaching all available MCP servers"
+            )
+            available_servers = get_available_mcp_servers()
+
+            for server_name in available_servers:
+                toolkit = get_mcp_toolkit(server_name)
+                if toolkit is None or not toolkit.functions:
+                    self._logger.warning(
+                        "Skipping MCP server '%s' – toolkit unavailable or empty",
+                        server_name,
+                    )
+                    continue
+
+                function_names = list(toolkit.functions.keys())
+                self._logger.info(
+                    "Auto-attached MCP server '%s' with %s function(s): %s",
+                    server_name,
+                    len(function_names),
+                    ", ".join(function_names[:5])
+                    + ("..." if len(function_names) > 5 else ""),
+                )
+                agent.add_tool(toolkit)
+
+            return
+
+        # Original logic: explicit tool selections
         if not selections:
             self._logger.info("No MCP tools selected for this conversation")
             return
