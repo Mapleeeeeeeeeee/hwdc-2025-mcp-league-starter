@@ -165,13 +165,57 @@ class Settings(BaseSettings):
         *,
         default: str | None = None,
         strip: bool = True,
+        validate_format: bool = True,
     ) -> str | None:
-        """Safely fetch secrets from environment variables."""
+        """Safely fetch secrets from environment variables with format validation.
 
+        Args:
+            name: Environment variable name
+            default: Default value if not set
+            strip: Whether to strip whitespace (default: True)
+            validate_format: Whether to validate secret format (default: True)
+
+        Returns:
+            Secret value or None if not set
+
+        Raises:
+            ValueError: If validate_format=True and secret contains invalid characters
+
+        Security considerations:
+            - Rejects secrets starting with '=' to prevent .env parsing errors
+            - Rejects secrets with leading/trailing whitespace when strip=False
+            - Helps prevent accidental credential leakage from malformed .env files
+        """
         value = os.getenv(name, default)
         if value is None:
             return None
-        return value.strip() if strip else value
+
+        processed_value = value.strip() if strip else value
+
+        if validate_format and processed_value:
+            # Security: Reject secrets starting with '=' to prevent .env parsing
+            # errors. Example: MCP_SERVER_AUTH_TOKEN==value would be read as
+            # "=value"
+            if processed_value.startswith("="):
+                raise ValueError(
+                    f"Secret '{name}' has invalid format: starts with '='. "
+                    f"This usually indicates a malformed .env file (e.g., KEY==VALUE). "
+                    f"Please fix your .env file to use KEY=VALUE format."
+                )
+
+            # Security: Warn if stripped value differs from original
+            # (whitespace present)
+            if strip and value != processed_value:
+                import warnings
+
+                warnings.warn(
+                    f"Secret '{name}' contains leading/trailing whitespace which was "
+                    f"automatically stripped. This may indicate a malformed .env file.",
+                    UserWarning,
+                    stacklevel=2,
+                )
+
+        return processed_value
 
 
 # Global settings instance

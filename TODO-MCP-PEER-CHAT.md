@@ -277,7 +277,7 @@ async def chat(
         message: 用戶的自然語言指令
                  例如：「列出 /project 目錄下的所有檔案」
                        「幫我統計上週的報告數量」
-        model_key: 可選，指定使用的 LLM 模型（如 'gpt-4', 'claude-3'）
+        model_key: 可選，指定使用的 LLM 模型（如 'gpt-4o-mini', 'claude-3'）
                   若不指定，使用預設模型
         conversation_id: 可選，對話 ID（用於追蹤多輪對話）
                         若不指定，每次呼叫都是新對話
@@ -294,7 +294,7 @@ async def chat(
     Example:
         >>> result = await chat(
         ...     message="列出 /project 目錄下的檔案",
-        ...     model_key="gpt-4"
+        ...     model_key="gpt-4o-mini"
         ... )
         >>> print(result["content"])
         "以下是 /project 目錄的檔案列表：
@@ -390,7 +390,7 @@ async def test():
     # 呼叫 chat
     result = await chat(
         message='你好，請告訴我當前時間',
-        model_key='gpt-4'
+        model_key='gpt-4o-mini'
     )
 
     print('Result:', result)
@@ -407,7 +407,7 @@ asyncio.run(test())
 {
   "success": true,
   "content": "你好！當前時間是 ...",
-  "model": "gpt-4",
+  "model": "gpt-4o-mini",
   "conversation_id": "peer-123e4567-...",
   "message_id": "msg-123...",
   "error": null
@@ -511,7 +511,7 @@ async def test():
         # 測試呼叫 chat
         result = await client.call_tool("chat", {
             "message": "你好，請簡單回應我",
-            "model_key": "gpt-4"
+            "model_key": "gpt-4o-mini"
         })
 
         print("\nChat result:")
@@ -543,7 +543,7 @@ Chat result:
 {
   "success": true,
   "content": "你好！我在這裡，有什麼我可以幫助你的嗎？",
-  "model": "gpt-4",
+  "model": "gpt-4o-mini",
   ...
 }
 ```
@@ -583,14 +583,14 @@ def list_available_models() -> dict[str, Any]:
         {
           "models": [
             {
-              "key": "gpt-4",
-              "name": "GPT-4",
+              "key": "gpt-4o-mini",
+              "name": "GPT-4O-MINI",
               "provider": "openai",
               "description": "Most capable model"
             },
             ...
           ],
-          "active_model": "gpt-4",
+          "active_model": "gpt-4o-mini",
           "total_count": 5
         }
     """
@@ -672,12 +672,12 @@ asyncio.run(test())
 **預期輸出**:
 ```
 Available models:
-  - gpt-4: GPT-4 (openai)
-  - gpt-4o: GPT-4o (openai)
+  - gpt-4o-mini: GPT-4O-MINI (openai)
+  - gpt-4o-minio: GPT-4O-MINIo (openai)
   - claude-3-opus: Claude 3 Opus (anthropic)
   - ollama-llama3: Llama 3 (ollama)
 
-Active model: gpt-4
+Active model: gpt-4o-mini
 Total: 4
 
 ✅ list_available_models works
@@ -857,7 +857,7 @@ asyncio.run(test())
       "available": true,
       "description": "Natural language chat with access to all local MCP tools",
       "supported_models": [...],
-      "default_model": "gpt-4"
+      "default_model": "gpt-4o-mini"
     },
     "mcp_servers": {
       "initialized": true,
@@ -1163,12 +1163,12 @@ uv run python test_peer_capabilities.py
 ============================================================
 
 員工B有 4 個可用模型：
-  - gpt-4: GPT-4 (openai)
-  - gpt-4o: GPT-4o (openai)
+  - gpt-4o-mini: GPT-4O-MINI (openai)
+  - gpt-4o-minio: GPT-4O-MINIo (openai)
   - claude-3-opus: Claude 3 Opus (anthropic)
   - ollama-llama3: Llama 3 (ollama)
 
-預設模型: gpt-4
+預設模型: gpt-4o-mini
 
 ✅ Test passed
 
@@ -1230,7 +1230,7 @@ async def test_simple_chat():
 
     result = await toolkit.call_tool("chat", {
         "message": "你好，請簡單自我介紹",
-        "model_key": "gpt-4"
+        "model_key": "gpt-4o-mini"
     })
 
     if result["success"]:
@@ -1259,7 +1259,7 @@ async def test_chat_with_filesystem():
 
     result = await toolkit.call_tool("chat", {
         "message": "請列出 /Users/maple/Desktop 目錄下的檔案，只要前5個就好",
-        "model_key": "gpt-4"
+        "model_key": "gpt-4o-mini"
     })
 
     if result["success"]:
@@ -1286,7 +1286,7 @@ async def test_chat_with_multiple_tools():
 
     result = await toolkit.call_tool("chat", {
         "message": "請統計 /Users/maple/Desktop 目錄下有多少個 .md 檔案",
-        "model_key": "gpt-4"
+        "model_key": "gpt-4o-mini"
     })
 
     if result["success"]:
@@ -1340,7 +1340,7 @@ async def test_multi_turn_conversation():
 
     result1 = await toolkit.call_tool("chat", {
         "message": "請記住，我的名字是小明",
-        "model_key": "gpt-4"
+        "model_key": "gpt-4o-mini"
     })
 
     conv_id = result1["conversation_id"]
@@ -1356,7 +1356,7 @@ async def test_multi_turn_conversation():
 
     result2 = await toolkit.call_tool("chat", {
         "message": "我叫什麼名字？",
-        "model_key": "gpt-4",
+        "model_key": "gpt-4o-mini",
         "conversation_id": conv_id  # ⭐ 使用相同的對話ID
     })
 
@@ -1413,7 +1413,7 @@ uv run python test_peer_chat.py
 
 員工B: 你好！我是一個 AI 助手，可以幫助你處理各種任務...
 
-使用模型: gpt-4
+使用模型: gpt-4o-mini
 對話ID: peer-123e4567-...
 
 ✅ Test passed
@@ -1500,7 +1500,7 @@ async def test_manager_agent_calls_employee():
     request = ConversationRequest(
         user_id="manager-a",
         conversation_id="manager-test-001",
-        model_key="gpt-4",
+        model_key="gpt-4o-mini",
         history=[
             ConversationMessage(
                 role="user",
@@ -1549,7 +1549,7 @@ async def test_manager_agent_autonomous():
     request = ConversationRequest(
         user_id="manager-a",
         conversation_id="manager-test-002",
-        model_key="gpt-4",
+        model_key="gpt-4o-mini",
         history=[
             ConversationMessage(
                 role="user",

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 from collections.abc import AsyncIterator
 from functools import lru_cache
@@ -71,29 +72,104 @@ async def stream_conversation_reply(
     payload: ConversationRequest,
     usecase: ConversationUsecaseDep,
 ) -> Response:
-    async def event_stream() -> AsyncIterator[str]:
-        try:
-            async for chunk in usecase.stream_reply(payload):
-                data = json.dumps(chunk.model_dump(by_alias=True))
-                yield f"data: {data}\n\n"
-        except LLMStreamError as exc:
-            error_payload = {
-                "type": exc.__class__.__name__,
-                "message": exc.detail,
-                "context": exc.context or None,
-            }
-            yield f"event: error\ndata: {json.dumps(error_payload)}\n\n"
-        except Exception as exc:  # pragma: no cover - defensive
-            logger.exception("Streaming conversation failed", exc_info=exc)
-            message = getattr(exc, "detail", str(exc)) or "Streaming error"
-            error_payload = {
-                "type": exc.__class__.__name__,
-                "message": message,
-                "context": getattr(exc, "context", None),
-            }
-            yield f"event: error\ndata: {json.dumps(error_payload)}\n\n"
+    async def event_stream_with_heartbeat() -> AsyncIterator[str]:
+        """
+        Stream events with heartbeat to prevent timeout during long operations.
+        Sends SSE comment (': heartbeat') every 15 seconds if no data.
+        """
+        heartbeat_interval = 15.0  # seconds
+        last_event_time = asyncio.get_event_loop().time()
 
-    return StreamingResponse(event_stream(), media_type="text/event-stream")
+        async def heartbeat_sender():
+            """Send periodic heartbeat comments to keep connection alive."""
+            nonlocal last_event_time
+            while True:
+                await asyncio.sleep(heartbeat_interval)
+                current_time = asyncio.get_event_loop().time()
+                if current_time - last_event_time >= heartbeat_interval:
+                    yield ": heartbeat\n\n"
+
+        async def data_sender():
+            """Send actual streaming data and update last event time."""
+            nonlocal last_event_time
+            try:
+                async for chunk in usecase.stream_reply(payload):
+                    last_event_time = asyncio.get_event_loop().time()
+                    data = json.dumps(chunk.model_dump(by_alias=True))
+                    yield f"data: {data}\n\n"
+            except LLMStreamError as exc:
+                last_event_time = asyncio.get_event_loop().time()
+                error_payload = {
+                    "type": exc.__class__.__name__,
+                    "message": exc.detail,
+                    "context": exc.context or None,
+                }
+                yield f"event: error\ndata: {json.dumps(error_payload)}\n\n"
+            except Exception as exc:  # pragma: no cover - defensive
+                logger.exception("Streaming conversation failed", exc_info=exc)
+                last_event_time = asyncio.get_event_loop().time()
+                message = getattr(exc, "detail", str(exc)) or "Streaming error"
+                error_payload = {
+                    "type": exc.__class__.__name__,
+                    "message": message,
+                    "context": getattr(exc, "context", None),
+                }
+                yield f"event: error\ndata: {json.dumps(error_payload)}\n\n"
+
+        # Merge heartbeat and data streams
+        heartbeat_gen = heartbeat_sender()
+        data_gen = data_sender()
+
+        # Use asyncio to interleave both generators
+        pending = {
+            asyncio.create_task(anext(heartbeat_gen)): "heartbeat",
+            asyncio.create_task(anext(data_gen)): "data",
+        }
+
+        try:
+            while pending:
+                done, pending_set = await asyncio.wait(
+                    pending.keys(), return_when=asyncio.FIRST_COMPLETED
+                )
+
+                # Process completed tasks BEFORE modifying pending dict
+                for task in done:
+                    source = pending[task]  # Get source before removing
+                    try:
+                        result = task.result()
+                        yield result
+
+                        # Create new task for the same source
+                        if source == "heartbeat":
+                            new_task = asyncio.create_task(anext(heartbeat_gen))
+                            pending[new_task] = "heartbeat"
+                        elif source == "data":
+                            new_task = asyncio.create_task(anext(data_gen))
+                            pending[new_task] = "data"
+                    except StopAsyncIteration:
+                        # One of the generators finished
+                        if source == "data":
+                            # Data stream finished, stop heartbeat too
+                            for remaining_task in pending_set:
+                                remaining_task.cancel()
+                            return
+                    finally:
+                        # Remove completed task from pending
+                        del pending[task]
+        finally:
+            # Cleanup
+            for task in pending.keys():
+                task.cancel()
+
+    return StreamingResponse(
+        event_stream_with_heartbeat(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",  # Disable Nginx buffering
+            "Connection": "keep-alive",
+        },
+    )
 
 
 @router.get("/models", response_model=APIResponse[ListModelsResponse])
