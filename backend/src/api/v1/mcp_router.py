@@ -2,18 +2,26 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException, status
 from src.core import get_logger
 from src.integrations.mcp import (
+    add_peer_node,
     get_mcp_status,
+    list_peer_nodes,
     reload_all_mcp_servers,
     reload_mcp_server,
+    remove_peer_node,
 )
 from src.models import (
+    AddPeerNodeRequest,
+    AddPeerNodeResponse,
     ListMCPServersResponse,
+    ListPeerNodesResponse,
     MCPServerInfo,
+    PeerNodeInfo,
     ReloadAllMCPServersResponse,
     ReloadMCPServerResponse,
+    RemovePeerNodeResponse,
 )
 from src.shared.response import APIResponse, create_success_response
 
@@ -71,3 +79,115 @@ async def reload_server(server_name: str) -> APIResponse[ReloadMCPServerResponse
         data=payload,
         message=f"Server '{server_name}' reloaded successfully",
     )
+
+
+# Peer-to-peer MCP node management endpoints
+
+
+@router.get(
+    "/peers",
+    response_model=APIResponse[ListPeerNodesResponse],
+    summary="List all peer MCP nodes",
+)
+async def list_peers() -> APIResponse[ListPeerNodesResponse]:
+    """List all connected peer MCP nodes (other containers running this application)."""
+    logger.info("Received request to list peer nodes")
+    peers = list_peer_nodes()
+
+    peer_infos = [
+        PeerNodeInfo(
+            name=peer["name"],
+            url=peer["url"],
+            description=peer.get("description"),
+            connected=peer["connected"],
+            function_count=peer["function_count"],
+        )
+        for peer in peers
+    ]
+
+    payload = ListPeerNodesResponse(peers=peer_infos)
+    return create_success_response(
+        data=payload, message=f"Found {len(peer_infos)} peer node(s)"
+    )
+
+
+@router.post(
+    "/peers",
+    response_model=APIResponse[AddPeerNodeResponse],
+    status_code=status.HTTP_201_CREATED,
+    summary="Add a new peer MCP node",
+)
+async def add_peer(request: AddPeerNodeRequest) -> APIResponse[AddPeerNodeResponse]:
+    """
+    Add a peer MCP node for peer-to-peer communication.
+
+    This allows this container to connect to another container running
+    the same application and use its exposed MCP tools.
+    """
+    logger.info(
+        "Received request to add peer node '%s' at %s",
+        request.peer_name,
+        request.peer_url,
+    )
+
+    try:
+        result = await add_peer_node(
+            request.peer_name, request.peer_url, auth_token=request.auth_token
+        )
+
+        payload = AddPeerNodeResponse(
+            success=result["success"],
+            peer_name=result["peer_name"],
+            peer_url=result["peer_url"],
+            function_count=result["function_count"],
+            message=f"Peer node '{request.peer_name}' added successfully",
+        )
+
+        return create_success_response(
+            data=payload, message=f"Peer node '{request.peer_name}' connected"
+        )
+    except ValueError as exc:
+        logger.error("Failed to add peer node: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
+        ) from exc
+    except Exception as exc:
+        logger.error("Unexpected error adding peer node: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to add peer node",
+        ) from exc
+
+
+@router.delete(
+    "/peers/{peer_name}",
+    response_model=APIResponse[RemovePeerNodeResponse],
+    summary="Remove a peer MCP node",
+)
+async def remove_peer(peer_name: str) -> APIResponse[RemovePeerNodeResponse]:
+    """Remove a peer MCP node connection."""
+    logger.info("Received request to remove peer node '%s'", peer_name)
+
+    try:
+        result = await remove_peer_node(peer_name)
+
+        payload = RemovePeerNodeResponse(
+            success=result["success"],
+            peer_name=result["peer_name"],
+            message=f"Peer node '{peer_name}' removed successfully",
+        )
+
+        return create_success_response(
+            data=payload, message=f"Peer node '{peer_name}' disconnected"
+        )
+    except ValueError as exc:
+        logger.error("Failed to remove peer node: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)
+        ) from exc
+    except Exception as exc:
+        logger.error("Unexpected error removing peer node: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to remove peer node",
+        ) from exc

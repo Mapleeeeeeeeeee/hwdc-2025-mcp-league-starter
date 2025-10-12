@@ -134,13 +134,14 @@ def get_app_config() -> dict[str, Any]:
         - cors_origins: Allowed CORS origins
     """
     from src.config import settings
+    from src.integrations.mcp.config import mcp_settings
 
     logger.info("MCP resource accessed: config://app")
     return {
         "environment": settings.environment,
         "host": settings.host,
         "port": settings.port,
-        "enable_mcp_system": settings.enable_mcp_system,
+        "enable_mcp_system": mcp_settings.enable_mcp_system,
         "cors_origins": settings.cors_origins,
     }
 

@@ -701,3 +701,20 @@ async def reload_mcp_server(server_name: str) -> ReloadMCPServerResponse:
 async def reload_all_mcp_servers() -> ReloadAllMCPServersResponse:
     """Reload all enabled MCP servers."""
     return await MCPManager().reload_all_servers()
+
+
+async def add_peer_node(
+    peer_name: str, peer_url: str, *, auth_token: str | None = None
+) -> dict[str, Any]:
+    """Add a peer MCP node for peer-to-peer communication."""
+    return await MCPManager().add_peer_node(peer_name, peer_url, auth_token=auth_token)
+
+
+async def remove_peer_node(peer_name: str) -> dict[str, Any]:
+    """Remove a peer MCP node."""
+    return await MCPManager().remove_peer_node(peer_name)
+
+
+def list_peer_nodes() -> list[dict[str, Any]]:
+    """List all connected peer MCP nodes."""
+    return MCPManager().list_peer_nodes()
