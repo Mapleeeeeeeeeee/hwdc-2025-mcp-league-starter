@@ -538,6 +538,124 @@ class MCPManager:
 
         logger.info("MCP manager shutdown complete")
 
+    async def add_peer_node(
+        self, peer_name: str, peer_url: str, *, auth_token: str | None = None
+    ) -> dict[str, Any]:
+        """
+        Dynamically add a peer MCP node (another instance of this application).
+
+        Args:
+            peer_name: Unique name for the peer node
+            peer_url: HTTP URL of the peer's MCP endpoint (e.g., http://peer:8000/mcp)
+            auth_token: Optional bearer token for authentication
+
+        Returns:
+            Dict with success status and function count
+
+        Raises:
+            ValueError: If peer_name already exists or URL is invalid
+        """
+        from .server_params import AuthType, HTTPAuthConfig, TransportType
+
+        logger.info("Adding peer MCP node '%s' at %s", peer_name, peer_url)
+
+        async with self._lock:
+            # Check if peer already exists
+            if peer_name in self._servers:
+                raise ValueError(f"Peer node '{peer_name}' already connected")
+
+            # Build auth config if token provided
+            auth_config = None
+            if auth_token:
+                auth_config = HTTPAuthConfig(
+                    type=AuthType.BEARER, token=auth_token, header_name="Authorization"
+                )
+
+            # Create peer configuration
+            peer_config = MCPServerParams(
+                name=peer_name,
+                transport=TransportType.HTTP,
+                url=peer_url,
+                auth=auth_config,
+                enabled=True,
+                description=f"Peer node at {peer_url}",
+                timeout_seconds=30,
+            )
+
+            # Validate configuration
+            if not self._params_manager.validate_config(peer_config):
+                raise ValueError(f"Invalid peer configuration for '{peer_name}'")
+
+            # Initialize the peer connection
+            await self._initialise_http_server(peer_config)
+
+            # Add to configs for persistence across reloads
+            self._configs.append(peer_config)
+
+            function_count = self._get_server_function_count(peer_name)
+            logger.info(
+                "Peer node '%s' added successfully with %s functions",
+                peer_name,
+                function_count,
+            )
+
+            return {
+                "success": True,
+                "peer_name": peer_name,
+                "peer_url": peer_url,
+                "function_count": function_count,
+            }
+
+    async def remove_peer_node(self, peer_name: str) -> dict[str, Any]:
+        """
+        Remove a peer MCP node.
+
+        Args:
+            peer_name: Name of the peer to remove
+
+        Returns:
+            Dict with success status
+
+        Raises:
+            ValueError: If peer_name doesn't exist
+        """
+        logger.info("Removing peer MCP node '%s'", peer_name)
+
+        async with self._lock:
+            if peer_name not in self._servers:
+                raise ValueError(f"Peer node '{peer_name}' not found")
+
+            # Close the connection
+            await self._close_server(peer_name)
+
+            # Remove from configs
+            self._configs = [cfg for cfg in self._configs if cfg.name != peer_name]
+
+            logger.info("Peer node '%s' removed successfully", peer_name)
+
+            return {"success": True, "peer_name": peer_name}
+
+    def list_peer_nodes(self) -> list[dict[str, Any]]:
+        """
+        List all connected peer MCP nodes (HTTP transport servers).
+
+        Returns:
+            List of peer node information
+        """
+        peers = []
+        for config in self._configs:
+            if config.is_http_transport() and config.name in self._servers:
+                peers.append(
+                    {
+                        "name": config.name,
+                        "url": config.url,
+                        "description": config.description,
+                        "connected": True,
+                        "function_count": self._get_server_function_count(config.name),
+                    }
+                )
+        return peers
+
 
 async def initialize_mcp_system() -> bool:
     return await MCPManager().initialize_system()

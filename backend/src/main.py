@@ -9,7 +9,11 @@ from src.api.v1.conversation_router import router as conversation_router
 from src.api.v1.mcp_router import router as mcp_router
 from src.config import settings
 from src.core import TraceMiddleware, setup_logging
-from src.integrations.mcp import graceful_mcp_cleanup, initialize_mcp_system
+from src.integrations.mcp import (
+    graceful_mcp_cleanup,
+    initialize_mcp_system,
+    mcp_server,
+)
 from src.shared.response import create_success_response
 
 
@@ -59,6 +63,10 @@ register_exception_handlers(app)
 # Register routers
 app.include_router(conversation_router, prefix="/api/v1")
 app.include_router(mcp_router, prefix="/api/v1")
+
+# Mount FastMCP server at /mcp endpoint for peer-to-peer MCP communication
+# This allows other containers to connect to this instance as an MCP server
+app.mount("/mcp", mcp_server.http_app())
 
 
 @app.get("/")

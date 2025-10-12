@@ -12,6 +12,7 @@ dependencies = [
     "ollama>=0.5.4",
     "openai>=1.108.1",
     "mcp>=1.14.1",
+    "fastmcp>=2.12.4",
 ]
 
 [dependency-groups]

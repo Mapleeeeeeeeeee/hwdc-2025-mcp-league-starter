@@ -15,6 +15,7 @@ from .manager import (
     reload_all_mcp_servers,
     reload_mcp_server,
 )
+from .server import mcp_server
 from .server_params import (
     MCPParamsManager,
     MCPServerParams,
@@ -41,4 +42,5 @@ __all__ = [
     "get_mcp_toolkit",
     "reload_mcp_server",
     "reload_all_mcp_servers",
+    "mcp_server",
 ]
