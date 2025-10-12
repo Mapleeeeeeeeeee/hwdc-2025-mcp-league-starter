@@ -24,19 +24,26 @@ def get_version() -> str:
     return pyproject["project"]["version"]
 
 
+setup_logging()
+
+# Create FastMCP server http_app first (before FastAPI app)
+# This allows us to access its lifespan
+mcp_http_app = mcp_server.http_app(path="/")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Handle application startup and shutdown events."""
-    # Initialize MCP system on startup
-    await initialize_mcp_system()
+    # Start FastMCP lifespan
+    async with mcp_http_app.lifespan(app):
+        # Initialize MCP system on startup
+        await initialize_mcp_system()
 
-    try:
-        yield
-    finally:
-        await graceful_mcp_cleanup()
+        try:
+            yield
+        finally:
+            await graceful_mcp_cleanup()
 
-
-setup_logging()
 
 app = FastAPI(
     title="HWDC 2025 Backend",
@@ -69,7 +76,10 @@ app.include_router(mcp_router, prefix="/api/v1")
 # (see src/integrations/mcp/server.py)
 # IMPORTANT: MCP_SERVER_AUTH_TOKEN is REQUIRED
 # FastMCP will enforce bearer token authentication
-app.mount("/mcp", mcp_server.http_app())
+# path="/" tells FastMCP to serve at the mount root, not at /mcp/mcp/
+# Note: mcp_http_app is created at the top of this file before FastAPI app
+# initialization
+app.mount("/mcp", mcp_http_app)
 
 
 @app.get("/")

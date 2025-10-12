@@ -24,6 +24,7 @@ services:
       # MCP Configuration
       - ENABLE_MCP_SYSTEM=${ENABLE_MCP_SYSTEM:-true}
       - MCP_TIMEOUT_SECONDS=60
+      - MCP_SERVER_AUTH_TOKEN=${MCP_SERVER_AUTH_TOKEN}
 
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
