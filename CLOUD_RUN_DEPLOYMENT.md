@@ -10,10 +10,12 @@
 |---------|------|--------|---------|
 | `_OPENAI_API_KEY` | OpenAI API 金鑰 | `sk-proj-xxx...` | [OpenAI Platform](https://platform.openai.com/api-keys) |
 | `_CORS_ALLOWED_ORIGINS` | CORS 允許的來源 | `https://your-app.run.app` | 部署後取得 Cloud Run URL |
+| `_MCP_SERVER_AUTH_TOKEN` | MCP Server 認證 Token | `a1b2c3d4e5f6...` | 執行 `openssl rand -hex 32` 生成 |
 
 ⚠️ **重要**：
 - 生產環境 `CORS_ALLOWED_ORIGINS` **必須明確設定**，否則會阻擋所有跨域請求
 - `_OPENAI_API_KEY` 是必填項，沒有此值應用無法正常運作
+- `_MCP_SERVER_AUTH_TOKEN` 是 MCP Server 認證所需，建議使用強隨機字串（64 字元）
 
 ---
 
@@ -28,6 +30,7 @@
 | `PORT` | `8000` | 後端服務端口 |
 | `LOG_LEVEL` | `INFO` | 日誌級別 |
 | `ENABLE_MCP_SYSTEM` | `true` | 啟用 MCP 系統 |
+| `AS_A_MCP_SERVER` | `false` | 是否作為 MCP Server 運行 |
 
 **Container 配置**（cloudbuild.yaml 設定）：
 - Memory: `2Gi`
@@ -94,6 +97,10 @@
 # 設定你的 OpenAI API Key
 export OPENAI_API_KEY="sk-proj-你的實際key"
 
+# 生成 MCP Server 認證 Token（建議使用強隨機字串）
+export MCP_AUTH_TOKEN=$(openssl rand -hex 32)
+echo "生成的 MCP Token: $MCP_AUTH_TOKEN"  # 請妥善保存此 token
+
 # 預留 CORS origins（先部署後再更新）
 export CORS_ORIGINS=""
 ```
@@ -103,7 +110,7 @@ export CORS_ORIGINS=""
 ```bash
 gcloud builds submit \
   --config=cloudbuild.yaml \
-  --substitutions=_OPENAI_API_KEY="$OPENAI_API_KEY",_CORS_ALLOWED_ORIGINS="$CORS_ORIGINS"
+  --substitutions=_OPENAI_API_KEY="$OPENAI_API_KEY",_CORS_ALLOWED_ORIGINS="$CORS_ORIGINS",_MCP_SERVER_AUTH_TOKEN="$MCP_AUTH_TOKEN"
 ```
 
 #### 步驟 3: 取得 Cloud Run URL
@@ -145,10 +152,13 @@ gcloud run services update hwdc-2025-mcp-league \
 如果你已經有自訂域名：
 
 ```bash
+# 0. 生成 MCP Token
+export MCP_AUTH_TOKEN=$(openssl rand -hex 32)
+
 # 1. 部署時直接設定正確的 CORS
 gcloud builds submit \
   --config=cloudbuild.yaml \
-  --substitutions=_OPENAI_API_KEY="$OPENAI_API_KEY",_CORS_ALLOWED_ORIGINS="https://www.your-domain.com,https://app.your-domain.com"
+  --substitutions=_OPENAI_API_KEY="$OPENAI_API_KEY",_CORS_ALLOWED_ORIGINS="https://www.your-domain.com,https://app.your-domain.com",_MCP_SERVER_AUTH_TOKEN="$MCP_AUTH_TOKEN"
 
 # 2. 設定域名對應
 gcloud run domain-mappings create \
@@ -287,6 +297,26 @@ gcloud logging read "resource.type=cloud_run_revision" --limit=50
 gcloud run services describe hwdc-2025-mcp-league \
   --region=asia-east1 \
   --format='value(status.conditions)'
+```
+
+### 問題 3.1: MCP_SERVER_AUTH_TOKEN 未設定
+
+**症狀**：容器啟動時報錯 `ValueError: MCP_SERVER_AUTH_TOKEN environment variable is required`
+
+**解決方案**：
+```bash
+# 1. 生成新的 token
+export MCP_AUTH_TOKEN=$(openssl rand -hex 32)
+
+# 2. 更新環境變數
+gcloud run services update hwdc-2025-mcp-league \
+  --region=asia-east1 \
+  --update-env-vars=MCP_SERVER_AUTH_TOKEN="$MCP_AUTH_TOKEN"
+
+# 3. 或重新部署
+gcloud builds submit \
+  --config=cloudbuild.yaml \
+  --substitutions=_OPENAI_API_KEY="$OPENAI_API_KEY",_CORS_ALLOWED_ORIGINS="$CORS_ORIGINS",_MCP_SERVER_AUTH_TOKEN="$MCP_AUTH_TOKEN"
 ```
 
 ### 問題 4: 記憶體或 CPU 不足

@@ -48,18 +48,21 @@ steps:
       - '--port'
       - '8080'
       - '--set-env-vars'
-      - 'ENVIRONMENT=production,HOST=0.0.0.0,PORT=8000,LOG_LEVEL=INFO,ENABLE_MCP_SYSTEM=true'
+      - 'ENVIRONMENT=production,HOST=0.0.0.0,PORT=8000,LOG_LEVEL=INFO,ENABLE_MCP_SYSTEM=true,AS_A_MCP_SERVER=false'
       - '--update-env-vars'
-      - 'OPENAI_API_KEY=${_OPENAI_API_KEY},CORS_ALLOWED_ORIGINS=${_CORS_ALLOWED_ORIGINS}'
+      - 'OPENAI_API_KEY=${_OPENAI_API_KEY},CORS_ALLOWED_ORIGINS=${_CORS_ALLOWED_ORIGINS},MCP_SERVER_AUTH_TOKEN=${_MCP_SERVER_AUTH_TOKEN}'
 
 # Substitution variables (set these when triggering the build)
-# Usage: gcloud builds submit --substitutions=_OPENAI_API_KEY=sk-xxx,_CORS_ALLOWED_ORIGINS=https://...
+# Usage: gcloud builds submit --substitutions=_OPENAI_API_KEY=sk-xxx,_CORS_ALLOWED_ORIGINS=https://...,_MCP_SERVER_AUTH_TOKEN=your-token
 substitutions:
   _OPENAI_API_KEY: ''
   # CORS origins must be set for production deployment
   # Format: Comma-separated URLs (Cloud Build handles escaping)
   # Example: 'https://your-app.run.app,https://www.your-domain.com'
   _CORS_ALLOWED_ORIGINS: ''
+  # MCP Server authentication token (REQUIRED)
+  # Generate with: openssl rand -base64 32
+  _MCP_SERVER_AUTH_TOKEN: ''
 
 # Build timeout
 timeout: 2400s

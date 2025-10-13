@@ -151,14 +151,17 @@ jobs:
     - name: Create test environment file
       run: |
         cp .env.docker.example .env.docker
-        # Use test values for CI - append to file with proper formatting
-        cat >> .env.docker << EOF
-
-        # CI Test Configuration
-        OPENAI_API_KEY=sk-test-key-for-ci
-        MCP_SERVER_AUTH_TOKEN=test-token
+        # Override with test values for CI
+        cat >> .env.docker << 'EOF'
+        # CI Test Configuration (override example values)
+        OPENAI_API_KEY=sk-test-key-for-ci-testing
+        MCP_SERVER_AUTH_TOKEN=test-token-for-ci
         AS_A_MCP_SERVER=false
         EOF
+        # Verify the file was created correctly
+        echo "=== .env.docker contents ==="
+        cat .env.docker
+        echo "==========================="
 
 
     - name: Build Docker images
@@ -173,21 +176,55 @@ jobs:
     - name: Wait for services to be healthy
       run: |
         echo "Waiting for services to start..."
-        sleep 40
+        sleep 10
+        
+        # Wait up to 2 minutes for health check to pass
+        for i in {1..24}; do
+          echo "Attempt $i/24: Checking health endpoint..."
+          if curl -f http://localhost:8080/health 2>/dev/null; then
+            echo "✅ Service is healthy!"
+            break
+          fi
+          
+          if [ $i -eq 24 ]; then
+            echo "❌ Service failed to become healthy after 2 minutes"
+            echo "=== Docker container logs ==="
+            docker logs hwdc-mcp-league
+            echo "=== Docker processes ==="
+            docker ps -a
+            exit 1
+          fi
+          
+          echo "Service not ready yet, waiting 5 seconds..."
+          sleep 5
+        done
+        
+        echo "=== Final container status ==="
         docker ps -a
 
     - name: Test health endpoint
       run: |
-        curl -f http://localhost:8080/health || exit 1
+        echo "Testing health endpoint..."
+        curl -f http://localhost:8080/health || {
+          echo "❌ Health check failed!"
+          docker logs hwdc-mcp-league
+          exit 1
+        }
 
     - name: Test API documentation
       run: |
-        curl -f http://localhost:8080/docs || exit 1
+        echo "Testing API documentation endpoint..."
+        curl -f http://localhost:8080/docs || {
+          echo "❌ API docs check failed!"
+          docker logs hwdc-mcp-league
+          exit 1
+        }
 
-    - name: Check container logs
-      if: failure()
+    - name: Show container logs on success
+      if: success()
       run: |
-        docker logs hwdc-mcp-league
+        echo "=== Service logs (last 50 lines) ==="
+        docker logs --tail 50 hwdc-mcp-league
 
     - name: Cleanup
       if: always()
