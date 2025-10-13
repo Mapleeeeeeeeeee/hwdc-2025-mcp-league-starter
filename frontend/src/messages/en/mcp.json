@@ -28,7 +28,7 @@
     "empty": "No MCP servers available yet. Check the backend configuration."
   },
   "tools": {
-    "sectionTitle": "Tool Selection",
+    "sectionTitle": "MCP Tool Selection",
     "selectServers": "Select MCP Servers",
     "selectFunctions": "Select Functions",
     "allFunctions": "All Functions",

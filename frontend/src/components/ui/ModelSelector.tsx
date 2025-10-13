@@ -33,6 +33,11 @@ export function ModelSelector({
 
   const selectedModel = models.find((m) => m.key === selectedModelKey);
 
+  // Helper function to get display name with fallback
+  const getDisplayName = (model: LLMModelDescriptor) => {
+    return (model.metadata?.display_name as string) || model.key;
+  };
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -85,7 +90,7 @@ export function ModelSelector({
           {/* Model Info */}
           <div className="flex flex-col">
             <span className="text-sm font-medium text-white">
-              {selectedModel?.key || "Select Model"}
+              {selectedModel ? getDisplayName(selectedModel) : "Select Model"}
             </span>
             {selectedModel && (
               <span className="text-xs text-white/50">
@@ -168,7 +173,7 @@ export function ModelSelector({
                             isSelected ? "text-white" : "text-white/70",
                           )}
                         >
-                          {model.key}
+                          {getDisplayName(model)}
                         </span>
                         {isDefault && (
                           <span className="rounded-full bg-blue-500/20 px-2 py-0.5 text-[10px] font-semibold text-blue-300">

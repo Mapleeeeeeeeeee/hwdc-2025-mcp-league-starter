@@ -28,7 +28,7 @@
     "empty": "尚無可用的 MCP 伺服器。請檢查後端配置。"
   },
   "tools": {
-    "sectionTitle": "工具選擇",
+    "sectionTitle": "MCP 工具選擇",
     "selectServers": "選擇 MCP 伺服器",
     "selectFunctions": "選擇函數",
     "allFunctions": "所有函數",
