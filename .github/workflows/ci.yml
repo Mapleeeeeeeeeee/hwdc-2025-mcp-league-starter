@@ -150,9 +150,11 @@ jobs:
 
     - name: Create test environment file
       run: |
-        cp .env.docker .env
+        cp .env.docker.example .env.docker
         # Use test API key for CI
-        echo "OPENAI_API_KEY=sk-test-key-for-ci" >> .env
+        echo "OPENAI_API_KEY=sk-test-key-for-ci" >> .env.docker
+        echo "MCP_SERVER_AUTH_TOKEN=test-token" >> .env.docker
+
 
     - name: Build Docker images
       run: |
