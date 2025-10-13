@@ -103,13 +103,7 @@ export function ChatMessage({
 /**
  * Loading indicator for streaming messages
  */
-export function ChatMessageLoading({
-  label,
-  isStreaming,
-}: {
-  label: string;
-  isStreaming: boolean;
-}) {
+export function ChatMessageLoading({ label }: { label: string }) {
   return (
     <motion.article
       initial={{ opacity: 0, y: 10 }}

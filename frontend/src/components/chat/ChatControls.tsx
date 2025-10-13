@@ -13,7 +13,6 @@ interface ChatControlsProps {
   onModelSelect: (modelKey: string) => void;
   onSetAsDefault?: () => void;
   isSettingDefault?: boolean;
-  isCurrentModelDefault?: boolean;
 
   // MCP tool selection
   mcpServers?: McpServer[];
@@ -32,7 +31,6 @@ export function ChatControls({
   onModelSelect,
   onSetAsDefault,
   isSettingDefault = false,
-  isCurrentModelDefault = false,
   mcpServers,
   selectedTools,
   onToolsChange,
@@ -47,7 +45,6 @@ export function ChatControls({
         onSelect={onModelSelect}
         onSetAsDefault={onSetAsDefault}
         isPending={isSettingDefault}
-        isCurrentModelDefault={isCurrentModelDefault}
       />
 
       {/* MCP Tool Selector */}

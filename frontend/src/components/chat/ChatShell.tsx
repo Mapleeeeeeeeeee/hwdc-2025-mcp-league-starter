@@ -99,7 +99,6 @@ export function ChatShell({
   );
 
   const hasMessages = messages.length > 0;
-  const isCurrentModelDefault = selectedModelKey === activeModelKey;
 
   // Handlers
   const handleSetAsDefault = useCallback(() => {
@@ -214,10 +213,7 @@ export function ChatShell({
           ))}
 
           {isBusy && !isStreaming && (
-            <ChatMessageLoading
-              label={tChat("assistant")}
-              isStreaming={isStreaming}
-            />
+            <ChatMessageLoading label={tChat("assistant")} />
           )}
         </motion.div>
 
@@ -230,7 +226,6 @@ export function ChatShell({
             onModelSelect={setSelectedModelKey}
             onSetAsDefault={handleSetAsDefault}
             isSettingDefault={setActiveModelMutation.isPending}
-            isCurrentModelDefault={isCurrentModelDefault}
             mcpServers={availableServers}
             selectedTools={selectedTools}
             onToolsChange={setSelectedTools}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useCallback, useState } from "react";
+import { useCallback, useState, useMemo } from "react";
 
 import type { McpServer, McpToolSelection } from "@/features/mcp";
 
@@ -21,7 +21,10 @@ export function ToolSelector({ servers, value, onChange }: ToolSelectorProps) {
   );
 
   // Create a map of selected servers for quick lookup
-  const selectedMap = new Map(value.map((tool) => [tool.server, tool]));
+  const selectedMap = useMemo(
+    () => new Map(value.map((tool) => [tool.server, tool])),
+    [value],
+  );
 
   const toggleServer = useCallback(
     (serverName: string) => {

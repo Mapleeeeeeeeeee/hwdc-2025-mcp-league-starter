@@ -13,7 +13,6 @@ interface ModelSelectorProps {
   onSetAsDefault?: () => void;
   disabled?: boolean;
   isPending?: boolean;
-  isCurrentModelDefault?: boolean;
 }
 
 /**
@@ -28,7 +27,6 @@ export function ModelSelector({
   onSetAsDefault,
   disabled = false,
   isPending = false,
-  isCurrentModelDefault = false,
 }: ModelSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
