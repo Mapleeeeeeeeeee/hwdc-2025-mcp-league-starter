@@ -74,7 +74,9 @@ class StubAgentFactory:
         *,
         model_key: str | None = None,
         session_id: str | None = None,
+        prompt_key: str | None = None,
         overrides=None,
+        strict_tools: bool = False,
     ):
         return self.agent
 
