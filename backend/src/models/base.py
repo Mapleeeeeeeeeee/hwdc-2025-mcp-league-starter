@@ -16,4 +16,5 @@ class APIBaseModel(BaseModel):
     model_config = ConfigDict(
         populate_by_name=True,
         alias_generator=_to_camel,
+        arbitrary_types_allowed=True,
     )

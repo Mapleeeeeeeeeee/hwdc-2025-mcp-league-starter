@@ -6,6 +6,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends
 from src.core.logging import get_logger
+from src.integrations.llm import ConversationAgentFactory
 from src.integrations.mcp import manager as mcp_manager
 from src.models.mcp import (
     ListMCPServersResponse,
@@ -23,10 +24,17 @@ def get_mcp_manager() -> mcp_manager.MCPManager:
     return mcp_manager.MCPManager()
 
 
+def get_agent_factory() -> ConversationAgentFactory:
+    return ConversationAgentFactory()
+
+
 def get_server_management_usecase(
     mcp_manager_dep: Annotated[mcp_manager.MCPManager, Depends(get_mcp_manager)],
+    agent_factory_dep: Annotated[ConversationAgentFactory, Depends(get_agent_factory)],
 ) -> MCPServerManagementUsecase:
-    return MCPServerManagementUsecase(mcp_manager=mcp_manager_dep)
+    return MCPServerManagementUsecase(
+        mcp_manager=mcp_manager_dep, agent_factory=agent_factory_dep
+    )
 
 
 ServerManagementUsecaseDep = Annotated[

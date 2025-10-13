@@ -186,7 +186,7 @@ class TestSettingsMCPServerAuthToken:
     """
 
     def test_mcp_server_import_with_valid_token_expects_success(self):
-        """Test importing mcp.server module with valid token succeeds."""
+        """Test importing mcp_server module with valid token succeeds."""
         # Arrange
         valid_token = "valid-bearer-token-123"
 
@@ -195,12 +195,12 @@ class TestSettingsMCPServerAuthToken:
             # Should not raise
             import importlib
 
-            import src.integrations.mcp.server
+            import src.api.mcp_server
 
-            importlib.reload(src.integrations.mcp.server)
+            importlib.reload(src.api.mcp_server)
 
     def test_mcp_server_import_without_token_expects_value_error(self):
-        """Test importing mcp.server module without token raises ValueError."""
+        """Test importing mcp_server module without token raises ValueError."""
         # Arrange & Act & Assert
         with patch.dict(os.environ, {}, clear=True):
             with pytest.raises(
@@ -209,12 +209,12 @@ class TestSettingsMCPServerAuthToken:
             ):
                 import importlib
 
-                import src.integrations.mcp.server
+                import src.api.mcp_server
 
-                importlib.reload(src.integrations.mcp.server)
+                importlib.reload(src.api.mcp_server)
 
     def test_mcp_server_import_with_malformed_token_expects_value_error(self):
-        """Test importing mcp.server with malformed token raises ValueError.
+        """Test importing mcp_server with malformed token raises ValueError.
 
         This test validates protection against .env file errors like:
         MCP_SERVER_AUTH_TOKEN==secret (double equals)
@@ -227,12 +227,12 @@ class TestSettingsMCPServerAuthToken:
             with pytest.raises(ValueError, match="starts with '='"):
                 import importlib
 
-                import src.integrations.mcp.server
+                import src.api.mcp_server
 
-                importlib.reload(src.integrations.mcp.server)
+                importlib.reload(src.api.mcp_server)
 
     def test_mcp_server_import_with_whitespace_token_expects_warning(self):
-        """Test importing mcp.server with whitespace token triggers warning."""
+        """Test importing mcp_server with whitespace token triggers warning."""
         # Arrange
         token_with_whitespace = "  bearer-token-123  "
 
@@ -242,9 +242,9 @@ class TestSettingsMCPServerAuthToken:
                 warnings.simplefilter("always")
                 import importlib
 
-                import src.integrations.mcp.server
+                import src.api.mcp_server
 
-                importlib.reload(src.integrations.mcp.server)
+                importlib.reload(src.api.mcp_server)
 
         # Assert
         assert len(warning_list) >= 1

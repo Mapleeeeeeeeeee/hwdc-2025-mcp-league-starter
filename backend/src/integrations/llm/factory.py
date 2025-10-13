@@ -14,8 +14,20 @@ from .providers import build_model
 class ConversationAgentFactory:
     """Creates Agno agents using runtime model configuration."""
 
+    _instance: ConversationAgentFactory | None = None
+    _class_initialized = False
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
     def __init__(self, store: ModelConfigStore | None = None) -> None:
+        if ConversationAgentFactory._class_initialized:
+            return
+
         self._store = store or ModelConfigStore()
+        ConversationAgentFactory._class_initialized = True
 
     def create_agent(
         self,

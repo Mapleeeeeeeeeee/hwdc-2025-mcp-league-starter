@@ -38,15 +38,27 @@ _DEFAULT_ACTIVE_KEY: str = _DEFAULT_MODEL_CONFIGS[0].key
 class ModelConfigStore:
     """Loads and persists model configuration without hardcoding providers."""
 
+    _instance: ModelConfigStore | None = None
+    _class_initialized = False
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
     def __init__(
         self,
         models_path: Path | None = None,
         active_path: Path | None = None,
     ) -> None:
+        if ModelConfigStore._class_initialized:
+            return
+
         self._models_path = models_path or settings.llm_models_file
         self._active_path = active_path or settings.llm_active_model_file
         self._lock = Lock()
         self._ensure_files()
+        ModelConfigStore._class_initialized = True
 
     def list_configs(self) -> list[LLMModelConfig]:
         return [config.model_copy(deep=True) for config in self._read_models_file()]

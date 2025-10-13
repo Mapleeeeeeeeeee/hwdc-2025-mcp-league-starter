@@ -2,15 +2,20 @@
 
 from __future__ import annotations
 
-from typing import Annotated, Any
-
-from fastmcp import Depends, FastMCP
+from fastmcp import FastMCP
 from fastmcp.server.auth import StaticTokenVerifier
 
 from src.config import settings
 from src.core.logging import get_logger
 from src.integrations.llm import ConversationAgentFactory
 from src.integrations.mcp import manager as mcp_manager
+from src.models.mcp_tools import (
+    AppConfigResponse,
+    GetServerCapabilitiesResponse,
+    ListAvailableModelsResponse,
+    MCPChatResponse,
+    SystemHealthResponse,
+)
 from src.usecases.mcp.mcp_usecase import (
     MCPChatUsecase,
     MCPServerManagementUsecase,
@@ -25,26 +30,6 @@ def get_mcp_manager() -> mcp_manager.MCPManager:
 
 def get_agent_factory() -> ConversationAgentFactory:
     return ConversationAgentFactory()
-
-
-def get_server_management_usecase(
-    mcp_manager_dep: Annotated[mcp_manager.MCPManager, Depends(get_mcp_manager)],
-) -> MCPServerManagementUsecase:
-    return MCPServerManagementUsecase(mcp_manager=mcp_manager_dep)
-
-
-ServerManagementUsecaseDep = Annotated[
-    MCPServerManagementUsecase, Depends(get_server_management_usecase)
-]
-
-
-def get_chat_usecase(
-    agent_factory_dep: Annotated[ConversationAgentFactory, Depends(get_agent_factory)],
-) -> MCPChatUsecase:
-    return MCPChatUsecase(agent_factory=agent_factory_dep)
-
-
-ChatUsecaseDep = Annotated[MCPChatUsecase, Depends(get_chat_usecase)]
 
 
 # --- Authentication Setup ---
@@ -83,101 +68,124 @@ mcp_server = FastMCP(
 
 @mcp_server.tool
 async def chat(
-    chat_usecase_dep: ChatUsecaseDep,
     message: str,
     model_key: str | None = None,
     conversation_id: str | None = None,
     user_id: str = "peer-caller",
-) -> dict[str, Any]:
+) -> MCPChatResponse:
     """Execute natural language conversation through local Agent."""
     logger.info("MCP tool 'chat' called by user=%s", user_id)
-    return await chat_usecase_dep.chat(message, model_key, conversation_id, user_id)
+    agent_factory = get_agent_factory()
+    chat_usecase = MCPChatUsecase(agent_factory=agent_factory)
+    return await chat_usecase.chat(message, model_key, conversation_id, user_id)
 
 
 @mcp_server.tool
-def list_mcp_servers(
-    management_usecase_dep: ServerManagementUsecaseDep,
-) -> dict[str, Any]:
+def list_mcp_servers() -> dict:
     """List all configured MCP servers and their status."""
     logger.info("MCP tool called: list_mcp_servers")
+    mcp_manager_instance = get_mcp_manager()
+    agent_factory = get_agent_factory()
+    management_usecase = MCPServerManagementUsecase(
+        mcp_manager=mcp_manager_instance, agent_factory=agent_factory
+    )
     # .model_dump() is used to convert the Pydantic model to a dict for the tool
-    return management_usecase_dep.list_servers().model_dump(by_alias=True)
+    return management_usecase.list_servers().model_dump(by_alias=True)
 
 
 @mcp_server.tool
-async def reload_mcp_server(
-    server_name: str,
-    management_usecase_dep: ServerManagementUsecaseDep,
-) -> dict[str, Any]:
+async def reload_mcp_server(server_name: str) -> dict:
     """Reload a specific MCP server by name."""
     logger.info("MCP tool called: reload_mcp_server (server=%s)", server_name)
-    result = await management_usecase_dep.reload_server(server_name)
+    mcp_manager_instance = get_mcp_manager()
+    agent_factory = get_agent_factory()
+    management_usecase = MCPServerManagementUsecase(
+        mcp_manager=mcp_manager_instance, agent_factory=agent_factory
+    )
+    result = await management_usecase.reload_server(server_name)
     return result.model_dump(by_alias=True)
 
 
 @mcp_server.tool
-async def reload_all_mcp_servers(
-    management_usecase_dep: ServerManagementUsecaseDep,
-) -> dict[str, Any]:
+async def reload_all_mcp_servers() -> dict:
     """Reload all enabled MCP servers."""
     logger.info("MCP tool called: reload_all_mcp_servers")
-    result = await management_usecase_dep.reload_all_servers()
+    mcp_manager_instance = get_mcp_manager()
+    agent_factory = get_agent_factory()
+    management_usecase = MCPServerManagementUsecase(
+        mcp_manager=mcp_manager_instance, agent_factory=agent_factory
+    )
+    result = await management_usecase.reload_all_servers()
     return result.model_dump(by_alias=True)
 
 
 @mcp_server.tool
-def get_mcp_server_functions(
-    server_name: str,
-    management_usecase_dep: ServerManagementUsecaseDep,
-) -> list[str]:
+def get_mcp_server_functions(server_name: str) -> list[str]:
     """Get list of available functions for a specific MCP server."""
     logger.info("MCP tool called: get_mcp_server_functions (server=%s)", server_name)
-    return management_usecase_dep.get_server_functions(server_name)
+    mcp_manager_instance = get_mcp_manager()
+    agent_factory = get_agent_factory()
+    management_usecase = MCPServerManagementUsecase(
+        mcp_manager=mcp_manager_instance, agent_factory=agent_factory
+    )
+    return management_usecase.get_server_functions(server_name)
 
 
 @mcp_server.tool
-def get_available_mcp_servers(
-    management_usecase_dep: ServerManagementUsecaseDep,
-) -> list[str]:
+def get_available_mcp_servers() -> list[str]:
     """Get list of all connected MCP server names."""
     logger.info("MCP tool called: get_available_mcp_servers")
-    return management_usecase_dep.get_available_servers()
+    mcp_manager_instance = get_mcp_manager()
+    agent_factory = get_agent_factory()
+    management_usecase = MCPServerManagementUsecase(
+        mcp_manager=mcp_manager_instance, agent_factory=agent_factory
+    )
+    return management_usecase.get_available_servers()
 
 
 @mcp_server.tool
-def list_available_models(
-    management_usecase_dep: ServerManagementUsecaseDep,
-) -> dict[str, Any]:
+def list_available_models() -> ListAvailableModelsResponse:
     """List all available LLM models configured in this container."""
     logger.info("MCP tool 'list_available_models' called")
-    return management_usecase_dep.list_available_models()
+    mcp_manager_instance = get_mcp_manager()
+    agent_factory = get_agent_factory()
+    management_usecase = MCPServerManagementUsecase(
+        mcp_manager=mcp_manager_instance, agent_factory=agent_factory
+    )
+    return management_usecase.list_available_models()
 
 
 @mcp_server.tool
-def get_server_capabilities(
-    management_usecase_dep: ServerManagementUsecaseDep,
-) -> dict[str, Any]:
+def get_server_capabilities() -> GetServerCapabilitiesResponse:
     """Get comprehensive capability information for this container."""
     logger.info("MCP tool 'get_server_capabilities' called")
-    return management_usecase_dep.get_server_capabilities()
+    mcp_manager_instance = get_mcp_manager()
+    agent_factory = get_agent_factory()
+    management_usecase = MCPServerManagementUsecase(
+        mcp_manager=mcp_manager_instance, agent_factory=agent_factory
+    )
+    return management_usecase.get_server_capabilities()
 
 
-# --- MCP Resources ---
-
-
-@mcp_server.resource("config://app")
-def get_app_config(
-    management_usecase_dep: ServerManagementUsecaseDep,
-) -> dict[str, Any]:
+@mcp_server.tool
+def get_app_config() -> AppConfigResponse:
     """Get application configuration information."""
-    logger.info("MCP resource accessed: config://app")
-    return management_usecase_dep.get_app_config()
+    logger.info("MCP tool 'get_app_config' called")
+    mcp_manager_instance = get_mcp_manager()
+    agent_factory = get_agent_factory()
+    management_usecase = MCPServerManagementUsecase(
+        mcp_manager=mcp_manager_instance, agent_factory=agent_factory
+    )
+    return management_usecase.get_app_config()
 
 
-@mcp_server.resource("health://system")
-def get_system_health(
-    management_usecase_dep: ServerManagementUsecaseDep,
-) -> dict[str, Any]:
+@mcp_server.tool
+def get_system_health() -> SystemHealthResponse:
     """Get system health status."""
-    logger.info("MCP resource accessed: health://system")
-    return management_usecase_dep.get_system_health()
+    logger.info("MCP tool 'get_system_health' called")
+    mcp_manager_instance = get_mcp_manager()
+    agent_factory = get_agent_factory()
+    management_usecase = MCPServerManagementUsecase(
+        mcp_manager=mcp_manager_instance, agent_factory=agent_factory
+    )
+    return management_usecase.get_system_health()

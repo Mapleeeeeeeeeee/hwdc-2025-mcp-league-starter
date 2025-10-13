@@ -7,7 +7,6 @@ from collections.abc import AsyncIterator
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
-from src.api.v1 import mcp_router
 from src.main import app
 
 pytestmark = [pytest.mark.integration, pytest.mark.api]
@@ -32,7 +31,8 @@ async def test_list_mcp_servers__returns_status_payload(
     async_client: AsyncClient,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    def _fake_get_mcp_status() -> dict[str, object]:
+    # Mock the MCPManager's get_system_status method instead
+    def _fake_get_system_status() -> dict[str, object]:
         return {
             "initialized": True,
             "servers": {
@@ -55,7 +55,11 @@ async def test_list_mcp_servers__returns_status_payload(
             "total_functions": 2,
         }
 
-    monkeypatch.setattr(mcp_router, "get_mcp_status", _fake_get_mcp_status)
+    from src.integrations.mcp.manager import MCPManager
+
+    monkeypatch.setattr(
+        MCPManager, "get_system_status", lambda self: _fake_get_system_status()
+    )
 
     response = await async_client.get("/api/v1/mcp/servers")
 
