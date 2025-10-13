@@ -14,6 +14,11 @@ from agno.tools.mcp import MCPTools
 from src.core.logging import get_logger
 from src.models import ReloadAllMCPServersResponse, ReloadMCPServerResponse
 from src.shared.exceptions import (
+    MCPAuthenticationError,
+    MCPConnectionError,
+    MCPConnectionTimeoutError,
+    MCPHTTPError,
+    MCPInvalidConfigError,
     MCPNoServersAvailableError,
     MCPServerDisabledError,
     MCPServerNotFoundError,
@@ -188,13 +193,94 @@ class MCPManager:
     def _handle_initialization_error(
         self, config: MCPServerParams, error: Exception
     ) -> None:
-        logger.error(
-            "Failed to initialise MCP server '%s': %s",
-            config.name,
-            error,
-        )
+        """
+        Handle and log initialization errors with user-friendly messages.
+
+        Provides specific guidance based on error type:
+        - Authentication errors: Check token configuration
+        - Connection errors: Check URL and network
+        - Timeout errors: Increase timeout or check server availability
+        - HTTP errors: Show status code and response
+        - Config errors: Show configuration issues
+        """
+        # Build error message with specific guidance
+        error_type = type(error).__name__
+        error_msg = str(error)
+
+        if isinstance(error, MCPAuthenticationError):
+            context = getattr(error, "context", {})
+            logger.error(
+                "❌ Authentication failed for MCP server '%s'\n"
+                "   URL: %s\n"
+                "   Status: HTTP %s\n"
+                "   Reason: %s\n"
+                "   💡 Action: Verify authentication token in config "
+                "matches server's expected token",
+                config.name,
+                config.url,
+                context.get("status_code", "unknown"),
+                context.get("reason", "Invalid or missing token"),
+            )
+        elif isinstance(error, MCPHTTPError):
+            context = getattr(error, "context", {})
+            logger.error(
+                "❌ HTTP error from MCP server '%s'\n"
+                "   URL: %s\n"
+                "   Status: HTTP %s\n"
+                "   Response: %s\n"
+                "   💡 Action: Check server logs and verify endpoint is correct",
+                config.name,
+                config.url,
+                context.get("status_code", "unknown"),
+                context.get("reason", "Unknown error"),
+            )
+        elif isinstance(error, MCPConnectionError):
+            context = getattr(error, "context", {})
+            logger.error(
+                "❌ Cannot connect to MCP server '%s'\n"
+                "   URL: %s\n"
+                "   Reason: %s\n"
+                "   💡 Action: Verify URL is correct and server is reachable "
+                "(check network/DNS)",
+                config.name,
+                config.url,
+                context.get("reason", "Connection failed"),
+            )
+        elif isinstance(error, MCPConnectionTimeoutError):
+            context = getattr(error, "context", {})
+            logger.error(
+                "❌ Connection timeout for MCP server '%s'\n"
+                "   URL: %s\n"
+                "   Timeout: %ss\n"
+                "   💡 Action: Increase timeout_seconds in config or "
+                "check if server is responding",
+                config.name,
+                config.url,
+                context.get("timeout_seconds", "unknown"),
+            )
+        elif isinstance(error, MCPInvalidConfigError):
+            context = getattr(error, "context", {})
+            logger.error(
+                "❌ Invalid configuration for MCP server '%s'\n"
+                "   Reason: %s\n"
+                "   💡 Action: Review configuration in mcp_servers.json",
+                config.name,
+                context.get("reason", "Configuration error"),
+            )
+        else:
+            # Generic error handling
+            logger.error(
+                "❌ Failed to initialise MCP server '%s'\n"
+                "   Error type: %s\n"
+                "   Message: %s",
+                config.name,
+                error_type,
+                error_msg,
+            )
+
+        # Always log full traceback at debug level for troubleshooting
         logger.debug(
-            "Traceback for MCP server '%s':\n%s",
+            "Detailed traceback for MCP server '%s':\n%s",
             config.name,
             "".join(
                 traceback.format_exception(

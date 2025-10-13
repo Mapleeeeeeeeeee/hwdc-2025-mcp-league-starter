@@ -23,6 +23,11 @@ from src.models import (
     ReloadMCPServerResponse,
     RemovePeerNodeResponse,
 )
+from src.shared.exceptions import (
+    MCPServerDisabledError,
+    MCPServerNotFoundError,
+    MCPServerReloadError,
+)
 from src.shared.response import APIResponse, create_success_response
 
 router = APIRouter(prefix="/mcp", tags=["mcp"])
@@ -63,8 +68,21 @@ async def list_mcp_servers() -> APIResponse[ListMCPServersResponse]:
 async def reload_all_servers() -> APIResponse[ReloadAllMCPServersResponse]:
     """Reload all enabled MCP servers."""
     logger.info("Received request to reload all MCP servers")
-    payload = await reload_all_mcp_servers()
-    return create_success_response(data=payload, message="All servers reloaded")
+    try:
+        payload = await reload_all_mcp_servers()
+        return create_success_response(data=payload, message="All servers reloaded")
+    except Exception as exc:
+        logger.error("Failed to reload all MCP servers: %s", exc, exc_info=True)
+        # Return a partial success response instead of raising
+        return create_success_response(
+            data=ReloadAllMCPServersResponse(
+                success=False,
+                reloaded_count=0,
+                failed_count=0,
+                results=[],
+            ),
+            message=f"Failed to reload servers: {exc}",
+        )
 
 
 @router.post(
@@ -74,11 +92,45 @@ async def reload_all_servers() -> APIResponse[ReloadAllMCPServersResponse]:
 async def reload_server(server_name: str) -> APIResponse[ReloadMCPServerResponse]:
     """Reload a specific MCP server by name."""
     logger.info("Received request to reload MCP server '%s'", server_name)
-    payload = await reload_mcp_server(server_name)
-    return create_success_response(
-        data=payload,
-        message=f"Server '{server_name}' reloaded successfully",
-    )
+    try:
+        payload = await reload_mcp_server(server_name)
+        return create_success_response(
+            data=payload,
+            message=f"Server '{server_name}' reloaded successfully",
+        )
+    except (MCPServerNotFoundError, MCPServerDisabledError) as exc:
+        # These are expected errors that should return proper error responses
+        logger.warning("Server reload validation failed: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
+    except MCPServerReloadError as exc:
+        # Server reload failed but we can return a structured response
+        logger.error("Server reload failed: %s", exc)
+        return create_success_response(
+            data=ReloadMCPServerResponse(
+                server_name=server_name,
+                success=False,
+                message=str(exc),
+                function_count=0,
+            ),
+            message=f"Failed to reload server '{server_name}'",
+        )
+    except Exception as exc:
+        logger.error(
+            f"Unexpected error reloading server '{server_name}': {exc}",
+            exc_info=True,
+        )
+        return create_success_response(
+            data=ReloadMCPServerResponse(
+                server_name=server_name,
+                success=False,
+                message=f"Unexpected error: {exc}",
+                function_count=0,
+            ),
+            message=f"Failed to reload server '{server_name}'",
+        )
 
 
 # Peer-to-peer MCP node management endpoints

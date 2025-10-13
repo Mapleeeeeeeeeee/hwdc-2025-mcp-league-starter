@@ -169,3 +169,79 @@ class MCPToolExecutionError(InternalServerError):
             },
             **kwargs,
         )
+
+
+class MCPAuthenticationError(BadGatewayError):
+    """MCP server authentication failed."""
+
+    def __init__(
+        self,
+        server_name: str,
+        url: str,
+        status_code: int,
+        reason: str | None = None,
+        **kwargs,
+    ) -> None:
+        detail = (
+            f"Authentication failed for MCP server '{server_name}' at {url} "
+            f"(HTTP {status_code})"
+        )
+        if reason:
+            detail = f"{detail}: {reason}"
+
+        super().__init__(
+            detail=detail,
+            i18n_key="errors.mcp.authentication_failed",
+            i18n_params={
+                "server_name": server_name,
+                "url": url,
+                "status_code": status_code,
+                "reason": reason or "Invalid or missing authentication token",
+            },
+            context={
+                "server_name": server_name,
+                "url": url,
+                "status_code": status_code,
+                "reason": reason,
+            },
+            retryable=False,
+            **kwargs,
+        )
+
+
+class MCPHTTPError(BadGatewayError):
+    """MCP server returned HTTP error."""
+
+    def __init__(
+        self,
+        server_name: str,
+        url: str,
+        status_code: int,
+        reason: str | None = None,
+        **kwargs,
+    ) -> None:
+        detail = (
+            f"HTTP error from MCP server '{server_name}' at {url} (HTTP {status_code})"
+        )
+        if reason:
+            detail = f"{detail}: {reason}"
+
+        super().__init__(
+            detail=detail,
+            i18n_key="errors.mcp.http_error",
+            i18n_params={
+                "server_name": server_name,
+                "url": url,
+                "status_code": status_code,
+                "reason": reason or "Unknown HTTP error",
+            },
+            context={
+                "server_name": server_name,
+                "url": url,
+                "status_code": status_code,
+                "reason": reason,
+            },
+            retryable=status_code >= 500,  # Server errors are retryable
+            retry_after=30 if status_code >= 500 else None,
+            **kwargs,
+        )

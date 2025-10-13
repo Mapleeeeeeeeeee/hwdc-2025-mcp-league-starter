@@ -8,8 +8,10 @@ from mcp.client.streamable_http import streamablehttp_client
 
 from src.core.logging import get_logger
 from src.shared.exceptions.mcp import (
+    MCPAuthenticationError,
     MCPConnectionError,
     MCPConnectionTimeoutError,
+    MCPHTTPError,
     MCPInvalidConfigError,
 )
 
@@ -154,8 +156,60 @@ async def create_http_mcp_connection(
             transport="http",
             timeout_seconds=params.timeout_seconds,
         ) from exc
+    except httpx.HTTPStatusError as exc:
+        # HTTP status errors (4xx, 5xx)
+        status_code = exc.response.status_code
+        response_text = (
+            exc.response.text[:200] if exc.response.text else "No response body"
+        )
+
+        # Handle authentication errors (401, 403)
+        if status_code in (401, 403):
+            logger.error(
+                "Authentication failed for MCP server '%s' at %s: HTTP %s",
+                params.name,
+                params.url,
+                status_code,
+            )
+            raise MCPAuthenticationError(
+                server_name=params.name,
+                url=params.url,
+                status_code=status_code,
+                reason=f"Check authentication token. Response: {response_text}",
+            ) from exc
+
+        # Handle other HTTP errors
+        logger.error(
+            "HTTP %s error from MCP server '%s' at %s: %s",
+            status_code,
+            params.name,
+            params.url,
+            response_text,
+        )
+        raise MCPHTTPError(
+            server_name=params.name,
+            url=params.url,
+            status_code=status_code,
+            reason=response_text,
+        ) from exc
+    except httpx.ConnectError as exc:
+        # Network connection errors (DNS, connection refused, etc.)
+        logger.error(
+            "Network connection error for MCP server '%s' at %s: %s",
+            params.name,
+            params.url,
+            exc,
+        )
+        raise MCPConnectionError(
+            server_name=params.name,
+            transport="http",
+            reason=(
+                f"Cannot reach server at {params.url}. "
+                f"Check URL and network connectivity: {exc}"
+            ),
+        ) from exc
     except httpx.HTTPError as exc:
-        # HTTP connection errors (network issues, HTTP errors, etc.)
+        # Other HTTP errors (network issues, etc.)
         logger.error(
             "HTTP connection error for MCP server '%s' at %s: %s",
             params.name,
@@ -168,14 +222,40 @@ async def create_http_mcp_connection(
             reason=str(exc),
         ) from exc
     except Exception as exc:
-        # Unexpected errors
-        logger.exception(
-            "Unexpected error connecting to HTTP MCP server '%s' at %s",
+        # Unexpected errors (may include MCP SDK internal errors)
+        error_msg = str(exc)
+        error_type = type(exc).__name__
+
+        # Try to extract HTTP status code from error message if possible
+        status_code_hint = ""
+        if "502" in error_msg or "Bad Gateway" in error_msg:
+            status_code_hint = (
+                " (Possible HTTP 502 Bad Gateway - target server unavailable)"
+            )
+        elif "401" in error_msg or "Unauthorized" in error_msg:
+            status_code_hint = (
+                " (Possible HTTP 401 Unauthorized - check authentication)"
+            )
+        elif "403" in error_msg or "Forbidden" in error_msg:
+            status_code_hint = " (Possible HTTP 403 Forbidden - check permissions)"
+        elif "404" in error_msg or "Not Found" in error_msg:
+            status_code_hint = " (Possible HTTP 404 Not Found - check URL)"
+        elif "timeout" in error_msg.lower():
+            status_code_hint = " (Connection timeout - server not responding)"
+
+        logger.error(
+            "Failed to connect to HTTP MCP server '%s' at %s\n"
+            "   Error type: %s\n"
+            "   Error message: %s%s",
             params.name,
             params.url,
+            error_type,
+            error_msg,
+            status_code_hint,
         )
+
         raise MCPConnectionError(
             server_name=params.name,
             transport="http",
-            reason=f"Unexpected error: {exc}",
+            reason=f"{error_type}: {error_msg}{status_code_hint}",
         ) from exc

@@ -9,6 +9,11 @@ from .llm import (
     LLMProviderUnsupportedError,
 )
 from .mcp import (
+    MCPAuthenticationError,
+    MCPConnectionError,
+    MCPConnectionTimeoutError,
+    MCPHTTPError,
+    MCPInvalidConfigError,
     MCPNoServersAvailableError,
     MCPServerDisabledError,
     MCPServerNotFoundError,
@@ -53,6 +58,11 @@ __all__ = [
     "MCPServerDisabledError",
     "MCPServerReloadError",
     "MCPNoServersAvailableError",
+    "MCPConnectionError",
+    "MCPConnectionTimeoutError",
+    "MCPInvalidConfigError",
+    "MCPAuthenticationError",
+    "MCPHTTPError",
     # Permission & Authorization exceptions
     "PermissionDeniedError",
     "AuthenticationRequiredError",

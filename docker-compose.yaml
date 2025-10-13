@@ -5,6 +5,7 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: hwdc-mcp-league
+    env_file: .env.docker
     ports:
       - "${EXTERNAL_PORT:-8080}:8080"
     environment:
