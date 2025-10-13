@@ -46,14 +46,42 @@ def test_load_config__valid_file__returns_config(temp_config_file: Path) -> None
     assert config.toolkits[0].enabled is True
 
 
-def test_load_config__missing_file__returns_empty_config(tmp_path: Path) -> None:
-    """Test loading when config file doesn't exist."""
+def test_load_config__missing_file__returns_default_config_with_one_toolkit(
+    tmp_path: Path,
+) -> None:
+    """Test loading when config file doesn't exist returns default config."""
     config_path = tmp_path / "nonexistent.json"
     store = ToolsConfigStore(config_path=config_path)
     config = store._load_config()
 
-    assert len(config.toolkits) == 0
+    assert len(config.toolkits) == 1  # Default has 1 toolkit
+    assert config.toolkits[0].key == "duckduckgo_search"
     assert len(config.custom_tools) == 0
+
+
+def test_load_config__missing_file__creates_config_file_with_defaults(
+    tmp_path: Path,
+) -> None:
+    """Test that missing config file gets created with default toolkits."""
+    config_path = tmp_path / "config" / "agno_tools.json"
+    store = ToolsConfigStore(config_path=config_path)
+
+    # File shouldn't exist initially
+    assert not config_path.exists()
+
+    # Load config (should copy defaults)
+    store._load_config()
+
+    # File should now exist
+    assert config_path.exists()
+
+    # Verify the copied content
+    with config_path.open("r", encoding="utf-8") as f:
+        copied_data = json.load(f)
+
+    assert len(copied_data["toolkits"]) == 1
+    assert copied_data["toolkits"][0]["key"] == "duckduckgo_search"
+    assert len(copied_data["custom_tools"]) == 0
 
 
 def test_get_enabled_toolkits__returns_only_enabled(temp_config_file: Path) -> None:

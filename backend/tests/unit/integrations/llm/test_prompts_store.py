@@ -49,15 +49,40 @@ def test_load_config__valid_file__returns_config(config_file):
     assert config.system_message == "You are a helpful assistant."
 
 
-def test_load_config__missing_file__returns_empty_config(tmp_path):
-    """Test that missing file returns empty configuration."""
+def test_load_config__missing_file__returns_default_config_with_two_prompts(tmp_path):
+    """Test that missing file loads default configuration with 2 prompts."""
     missing_path = tmp_path / "nonexistent.json"
     store = PromptsConfigStore(config_path=missing_path)
     config = store._load_config()
 
     assert isinstance(config, AgnoPromptsConfig)
-    assert len(config.prompts) == 0
+    assert len(config.prompts) == 2  # Default has 2 prompts
+    assert config.prompts[0].key == "default"
+    assert config.prompts[1].key == "hwdc_demo_prompt"
     assert config.system_message is None
+
+
+def test_load_config__missing_file__creates_config_file_with_defaults(tmp_path):
+    """Test that missing config file gets created with default content."""
+    missing_path = tmp_path / "config" / "agno_prompts.json"
+    store = PromptsConfigStore(config_path=missing_path)
+
+    # File shouldn't exist initially
+    assert not missing_path.exists()
+
+    # Load config (should copy defaults)
+    store._load_config()
+
+    # File should now exist
+    assert missing_path.exists()
+
+    # Verify the copied content
+    with missing_path.open("r", encoding="utf-8") as f:
+        copied_data = json.load(f)
+
+    assert len(copied_data["prompts"]) == 2
+    assert copied_data["prompts"][0]["key"] == "default"
+    assert copied_data["prompts"][1]["key"] == "hwdc_demo_prompt"
 
 
 def test_get_prompt_by_key__existing_key__returns_prompt(config_file):
