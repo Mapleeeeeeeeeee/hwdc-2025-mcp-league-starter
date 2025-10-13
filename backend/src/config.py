@@ -33,6 +33,10 @@ class Settings(BaseSettings):
         default="",
         alias="CORS_ALLOWED_HEADERS",
     )
+    as_a_mcp_server: bool = Field(
+        default=False,
+        alias="AS_A_MCP_SERVER",
+    )
 
     @property
     def cors_origins(self) -> list[str]:
