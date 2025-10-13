@@ -16,8 +16,10 @@ from .mcp import (
     MCPInvalidConfigError,
     MCPNoServersAvailableError,
     MCPServerDisabledError,
+    MCPServerNotAvailableError,
     MCPServerNotFoundError,
     MCPServerReloadError,
+    MCPToolExecutionError,
 )
 from .permission import (
     AuthenticationRequiredError,
@@ -54,6 +56,7 @@ __all__ = [
     "LLMProviderNotConfiguredError",
     "LLMProviderUnsupportedError",
     # MCP server exceptions
+    "MCPServerNotAvailableError",
     "MCPServerNotFoundError",
     "MCPServerDisabledError",
     "MCPServerReloadError",
@@ -63,6 +66,7 @@ __all__ = [
     "MCPInvalidConfigError",
     "MCPAuthenticationError",
     "MCPHTTPError",
+    "MCPToolExecutionError",
     # Permission & Authorization exceptions
     "PermissionDeniedError",
     "AuthenticationRequiredError",

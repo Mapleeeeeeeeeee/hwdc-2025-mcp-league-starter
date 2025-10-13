@@ -7,7 +7,42 @@ from src.core.exceptions import (
     BadRequestError,
     GatewayTimeoutError,
     InternalServerError,
+    ServiceUnavailableError,
 )
+
+
+class MCPServerNotAvailableError(ServiceUnavailableError):
+    """MCP server endpoint is not available (AS_A_MCP_SERVER=false)."""
+
+    def __init__(
+        self,
+        as_a_mcp_server: bool,
+        enable_mcp_system: bool,
+        **kwargs,
+    ) -> None:
+        super().__init__(
+            detail=(
+                "This server is not configured to act as an MCP server. "
+                "The AS_A_MCP_SERVER environment variable is set to false. "
+                "To enable MCP server functionality, set AS_A_MCP_SERVER=true "
+                "and restart the server."
+            ),
+            i18n_key="errors.mcp.server_not_available",
+            i18n_params={
+                "as_a_mcp_server": str(as_a_mcp_server),
+                "enable_mcp_system": str(enable_mcp_system),
+            },
+            context={
+                "as_a_mcp_server": as_a_mcp_server,
+                "enable_mcp_system": enable_mcp_system,
+                "hint": (
+                    "This server can still call other MCP servers "
+                    "if ENABLE_MCP_SYSTEM=true"
+                ),
+            },
+            retryable=False,
+            **kwargs,
+        )
 
 
 class MCPServerNotFoundError(BadRequestError):

@@ -23,7 +23,7 @@ from .logging import (
     get_logger,
     setup_logging,
 )
-from .middleware import TraceMiddleware
+from .middleware import MCPServerGuardMiddleware, TraceMiddleware
 
 __all__ = [
     # Base exceptions
@@ -45,6 +45,7 @@ __all__ = [
     "GatewayTimeoutError",
     # Middleware
     "TraceMiddleware",
+    "MCPServerGuardMiddleware",
     # Logging
     "setup_logging",
     "get_logger",

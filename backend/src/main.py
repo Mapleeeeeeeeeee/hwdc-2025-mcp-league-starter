@@ -9,10 +9,11 @@ from src.api.mcp_server import initialize_mcp_server
 from src.api.v1.conversation_router import router as conversation_router
 from src.api.v1.mcp_router import router as mcp_router
 from src.config import settings
-from src.core import TraceMiddleware, setup_logging
+from src.core import MCPServerGuardMiddleware, TraceMiddleware, setup_logging
 from src.integrations.mcp import (
     graceful_mcp_cleanup,
     initialize_mcp_system,
+    mcp_settings,
 )
 from src.shared.response import create_success_response
 
@@ -72,6 +73,13 @@ app.add_middleware(
 # Add trace middleware for request tracking and performance monitoring
 app.add_middleware(TraceMiddleware)
 
+# Add MCP server guard middleware to handle disabled MCP server endpoint
+app.add_middleware(
+    MCPServerGuardMiddleware,
+    as_a_mcp_server=settings.as_a_mcp_server,
+    enable_mcp_system=mcp_settings.enable_mcp_system,
+)
+
 # Register global exception handlers
 register_exception_handlers(app)
 
@@ -87,6 +95,8 @@ app.include_router(mcp_router, prefix="/api/v1")
 # path="/" tells FastMCP to serve at the mount root, not at /mcp/mcp/
 # Note: mcp_http_app is created at the top of this file before FastAPI app
 # initialization
+# When AS_A_MCP_SERVER=false, MCPServerGuardMiddleware will handle /mcp requests
+# and return 503 with clear error message
 if mcp_http_app is not None:
     app.mount("/mcp", mcp_http_app)
 
