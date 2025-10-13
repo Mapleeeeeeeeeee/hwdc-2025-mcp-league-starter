@@ -60,6 +60,11 @@ export async function apiRequest<T>(
       return response as unknown as T;
     }
 
+    // Handle 204 No Content responses
+    if (response.status === 204) {
+      return undefined as T;
+    }
+
     let payload: ApiResponse<T> | null = null;
 
     try {
