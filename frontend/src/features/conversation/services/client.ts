@@ -1,4 +1,5 @@
 import { apiClient } from "@/lib/api/api-client";
+import { ApiError } from "@/lib/api/api-error";
 import { API_PATHS } from "@/lib/api/paths";
 import { fetchEventSource } from "@microsoft/fetch-event-source";
 
@@ -66,12 +67,25 @@ export function streamConversationRequest(
     },
     async onopen(response) {
       if (response.ok) {
-        // Connection opened successfully
-      } else {
-        handlers.onError?.(
-          new Error(`Streaming request failed with status ${response.status}`),
+        return; // Connection opened successfully
+      }
+
+      let apiError: ApiError;
+      try {
+        const payload = await response.json();
+        apiError = ApiError.fromPayload(response.status, payload);
+      } catch {
+        apiError = new ApiError(
+          response.status,
+          "UnknownStreamError",
+          undefined,
+          `Streaming request failed with status ${response.status}`,
         );
       }
+
+      handlers.onError?.(apiError);
+      // Throw error to abort the fetchEventSource connection
+      throw apiError;
     },
     onerror(error) {
       if (!controller.signal.aborted) {

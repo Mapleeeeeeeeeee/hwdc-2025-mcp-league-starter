@@ -1,6 +1,7 @@
 {
   "generic": "Something went wrong. Please try again later.",
   "requestTimeout": "The request took too long and timed out. This may happen during complex operations. Please try again later.",
+  "tooManyTools": "The number of active tools has exceeded the provider's limit. Please disable some tools and try again.",
   "mcp": {
     "unreachable": "Unable to reach MCP server: {server}",
     "notInitialized": "The MCP system has not finished initialising yet."

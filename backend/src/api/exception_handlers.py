@@ -6,6 +6,7 @@ All exceptions are transformed into consistent JSON responses with trace IDs.
 """
 
 from logging import getLogger
+from typing import Any
 
 from fastapi import HTTPException, Request, status
 from fastapi.exceptions import RequestValidationError
@@ -44,7 +45,7 @@ async def base_app_exception_handler(
     )
 
     # Prepare retry information if applicable
-    retry_info = None
+    retry_info: dict[str, Any] | None = None
     if hasattr(exc, "retryable") and exc.retryable:
         retry_info = {
             "retryable": True,
@@ -53,7 +54,7 @@ async def base_app_exception_handler(
             "current_attempt": getattr(request.state, "retry_attempt", 1),
         }
 
-    response_content = {
+    response_content: dict[str, Any] = {
         "success": False,
         "error": {
             "type": exc.__class__.__name__,
@@ -62,6 +63,12 @@ async def base_app_exception_handler(
             "context": exc.context if exc.context else None,
         },
     }
+
+    # Include i18n information if available
+    if hasattr(exc, "i18n_key") and exc.i18n_key:
+        response_content["error"]["i18n_key"] = exc.i18n_key
+    if hasattr(exc, "i18n_params") and exc.i18n_params:
+        response_content["error"]["i18n_params"] = exc.i18n_params
 
     if retry_info:
         response_content["retry_info"] = retry_info

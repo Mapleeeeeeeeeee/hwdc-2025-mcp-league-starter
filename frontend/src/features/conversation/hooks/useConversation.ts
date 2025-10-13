@@ -210,7 +210,7 @@ export function useConversation({
         const handleStreamError = (err: Error) => {
           streamControllerRef.current = null;
           setIsStreamingActive(false);
-          setError(err.message || tChat("error.generic"));
+          setError(getErrorMessage(tChat, tErrors, err));
           setMessages((prev) =>
             prev.filter((message) => message.id !== placeholderId),
           );

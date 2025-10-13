@@ -160,3 +160,18 @@ class GatewayTimeoutError(ServerError):
         kwargs.setdefault("retry_after", 30)  # Default 30 seconds retry delay
         kwargs.setdefault("max_retries", 3)
         super().__init__(detail=detail, status_code=504, **kwargs)
+
+
+class TooManyToolsError(BadRequestError):
+    """400 Bad Request - Too many tools"""
+
+    def __init__(
+        self,
+        detail: str = (
+            "The number of active tools has exceeded the provider's limit. "
+            "Please disable some tools and try again."
+        ),
+        **kwargs,
+    ):
+        kwargs.setdefault("i18n_key", "errors.tooManyTools")
+        super().__init__(detail=detail, **kwargs)
