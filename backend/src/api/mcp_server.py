@@ -91,7 +91,26 @@ def _register_mcp_tools(server: FastMCP):
         conversation_id: str | None = None,
         user_id: str = "peer-caller",
     ) -> MCPChatResponse:
-        """Execute natural language conversation through local Agent."""
+        """呼叫此功能前，請先依序查詢
+        - list_available_models
+        - get_available_mcp_servers
+        - get_mcp_server_functions
+
+        才知道要使用哪個模型、請對方執行哪個伺服器的哪個函數（可以是多個）。
+
+        此功能為主要功能，呼叫他能夠與 LLM 模型進行對話，
+        並可選擇不同模型和維持對話上下文。
+        對方會透過自身能力呼叫其他 MCP 伺服器的函數來輔助回答。
+
+        Args:
+            message (str): 用戶的訊息內容，必填。
+            model_key (str | None): 可選的 LLM 模型鍵，如果不指定則使用預設模型。
+            conversation_id (str | None): 可選的對話 ID，用於維持上下文和多輪對話。
+            user_id (str): 用戶 ID，預設為 "peer-caller"。
+
+        Returns:
+            MCPChatResponse: 包含對話回應的 Pydantic 模型，包括 AI 的回覆、對話 ID 等。
+        """
         logger.info("MCP tool 'chat' called by user=%s", user_id)
         agent_factory = get_agent_factory()
         chat_usecase = MCPChatUsecase(agent_factory=agent_factory)
@@ -99,7 +118,13 @@ def _register_mcp_tools(server: FastMCP):
 
     @server.tool
     def list_mcp_servers() -> dict:
-        """List all configured MCP servers and their status."""
+        """列出所有配置的 MCP 伺服器及其狀態。
+
+        提供伺服器清單，包括是否啟用、連接狀態等。有助於監控和調試。
+
+        Returns:
+            dict: 包含狀態的字典，由 MCPServerManagementUsecase.list_servers() 生成。
+        """
         logger.info("MCP tool called: list_mcp_servers")
         mcp_manager_instance = get_mcp_manager()
         agent_factory = get_agent_factory()
@@ -111,7 +136,16 @@ def _register_mcp_tools(server: FastMCP):
 
     @server.tool
     async def reload_mcp_server(server_name: str) -> dict:
-        """Reload a specific MCP server by name."""
+        """重新載入指定的 MCP 伺服器。
+
+        如果伺服器出錯或配置改變，可以手動重新載入，而不影響其他伺服器。
+
+        Args:
+            server_name (str): 要重新載入的伺服器名稱。
+
+        Returns:
+            dict: 重新載入結果的字典，由 reload_server 生成。
+        """
         logger.info("MCP tool called: reload_mcp_server (server=%s)", server_name)
         mcp_manager_instance = get_mcp_manager()
         agent_factory = get_agent_factory()
@@ -123,7 +157,13 @@ def _register_mcp_tools(server: FastMCP):
 
     @server.tool
     async def reload_all_mcp_servers() -> dict:
-        """Reload all enabled MCP servers."""
+        """重新載入所有啟用的 MCP 伺服器。
+
+        批量操作，適合全系統重置或配置更新後的同步。
+
+        Returns:
+            dict: 重新載入結果的字典，由 reload_all_servers 生成。
+        """
         logger.info("MCP tool called: reload_all_mcp_servers")
         mcp_manager_instance = get_mcp_manager()
         agent_factory = get_agent_factory()
@@ -135,7 +175,16 @@ def _register_mcp_tools(server: FastMCP):
 
     @server.tool
     def get_mcp_server_functions(server_name: str) -> list[str]:
-        """Get list of available functions for a specific MCP server."""
+        """獲取指定 MCP 伺服器的可用函數列表。
+
+        列出某個伺服器暴露的工具或函數，讓客戶端知道可以調用什麼。
+
+        Args:
+            server_name (str): 伺服器名稱。
+
+        Returns:
+            list[str]: 函數名稱列表。
+        """
         logger.info(
             "MCP tool called: get_mcp_server_functions (server=%s)", server_name
         )
@@ -148,7 +197,13 @@ def _register_mcp_tools(server: FastMCP):
 
     @server.tool
     def get_available_mcp_servers() -> list[str]:
-        """Get list of all connected MCP server names."""
+        """獲取所有已連接 MCP 伺服器的名稱列表。
+
+        簡單的清單，提供活躍伺服器的概覽。只返回名稱。
+
+        Returns:
+            list[str]: 伺服器名稱列表。
+        """
         logger.info("MCP tool called: get_available_mcp_servers")
         mcp_manager_instance = get_mcp_manager()
         agent_factory = get_agent_factory()
@@ -159,7 +214,13 @@ def _register_mcp_tools(server: FastMCP):
 
     @server.tool
     def list_available_models() -> ListAvailableModelsResponse:
-        """List all available LLM models configured in this container."""
+        """列出所有配置的 LLM 模型。
+
+        提供模型清單，讓客戶端選擇適合的模型進行對話或任務。
+
+        Returns:
+            ListAvailableModelsResponse: 模型列表的 Pydantic 模型。
+        """
         logger.info("MCP tool 'list_available_models' called")
         mcp_manager_instance = get_mcp_manager()
         agent_factory = get_agent_factory()
@@ -170,7 +231,13 @@ def _register_mcp_tools(server: FastMCP):
 
     @server.tool
     def get_server_capabilities() -> GetServerCapabilitiesResponse:
-        """Get comprehensive capability information for this container."""
+        """獲取這個容器的綜合能力資訊。
+
+        提供伺服器的元資料，讓客戶端了解整體功能。
+
+        Returns:
+            GetServerCapabilitiesResponse: 能力資訊的 Pydantic 模型。
+        """
         logger.info("MCP tool 'get_server_capabilities' called")
         mcp_manager_instance = get_mcp_manager()
         agent_factory = get_agent_factory()
@@ -181,7 +248,13 @@ def _register_mcp_tools(server: FastMCP):
 
     @server.tool
     def get_app_config() -> AppConfigResponse:
-        """Get application configuration information."""
+        """獲取應用程式配置資訊。
+
+        暴露配置，讓外部工具或管理員查看設定。注意可能包含敏感資訊。
+
+        Returns:
+            AppConfigResponse: 配置資訊的 Pydantic 模型。
+        """
         logger.info("MCP tool 'get_app_config' called")
         mcp_manager_instance = get_mcp_manager()
         agent_factory = get_agent_factory()
@@ -192,7 +265,13 @@ def _register_mcp_tools(server: FastMCP):
 
     @server.tool
     def get_system_health() -> SystemHealthResponse:
-        """Get system health status."""
+        """獲取系統健康狀態。
+
+        監控系統健康，提供健康檢查端點。
+
+        Returns:
+            SystemHealthResponse: 健康狀態的 Pydantic 模型。
+        """
         logger.info("MCP tool 'get_system_health' called")
         mcp_manager_instance = get_mcp_manager()
         agent_factory = get_agent_factory()
