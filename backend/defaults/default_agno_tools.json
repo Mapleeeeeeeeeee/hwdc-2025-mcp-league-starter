@@ -1,0 +1,11 @@
+{
+  "toolkits": [
+    {
+      "key": "duckduckgo_search",
+      "toolkit_class": "agno.tools.duckduckgo.DuckDuckGoTools",
+      "enabled": true,
+      "config": {}
+    }
+  ],
+  "custom_tools": []
+}

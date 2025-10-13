@@ -1,0 +1,41 @@
+{
+  "models": [
+    {
+      "key": "openai:gpt-4o-mini",
+      "provider": "openai",
+      "model_id": "gpt-4o-mini",
+      "api_key_env": "OPENAI_API_KEY",
+      "base_url": null,
+      "default_params": {},
+      "supports_streaming": true,
+      "metadata": {
+        "display_name": "OpenAI GPT-4o mini"
+      }
+    },
+    {
+      "key": "openai:gpt-5-mini",
+      "provider": "openai",
+      "model_id": "gpt-5-mini",
+      "api_key_env": "OPENAI_API_KEY",
+      "base_url": null,
+      "default_params": {},
+      "supports_streaming": true,
+      "metadata": {
+        "display_name": "OpenAI GPT-5 mini"
+      }
+    },
+    {
+      "key": "ollama:qwen3-8b",
+      "provider": "ollama",
+      "model_id": "qwen3:8b",
+      "api_key_env": null,
+      "base_url": "http://localhost:11434",
+      "default_params": {},
+      "supports_streaming": true,
+      "metadata": {
+        "display_name": "Ollama Qwen3 8B",
+        "debug": "true"
+      }
+    }
+  ]
+}
