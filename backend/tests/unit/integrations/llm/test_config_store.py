@@ -9,6 +9,15 @@ from src.core.exceptions import NotFoundError
 from src.integrations.llm import LLMModelConfig, ModelConfigStore
 
 
+@pytest.fixture(autouse=True)
+def reset_singleton():
+    """Reset ModelConfigStore singleton between tests."""
+    yield
+    # Reset singleton state after each test
+    ModelConfigStore._instance = None
+    ModelConfigStore._class_initialized = False
+
+
 def _make_store(tmp_path) -> ModelConfigStore:
     models_path = tmp_path / "models.json"
     active_path = tmp_path / "active.json"

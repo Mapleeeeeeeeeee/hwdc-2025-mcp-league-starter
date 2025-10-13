@@ -53,9 +53,9 @@ def test_mcp_endpoint_blocked_when_disabled(app_with_mcp_disabled):
     assert response.status_code == 503
     data = response.json()
     assert "error" in data
-    assert data["error"] == "MCP Server Not Available"
-    assert data["configuration"]["as_a_mcp_server"] is False
-    assert data["configuration"]["enable_mcp_system"] is True
+    assert data["error"]["type"] == "MCPServerNotAvailableError"
+    assert data["error"]["context"]["as_a_mcp_server"] is False
+    assert data["error"]["context"]["enable_mcp_system"] is True
 
     # Test POST request
     response = client.post("/mcp")
@@ -103,16 +103,21 @@ def test_error_message_content(app_with_mcp_disabled):
     response = client.post("/mcp/test")
     data = response.json()
 
-    # Check required fields
+    # Check response structure
+    assert "success" in data
+    assert data["success"] is False
     assert "error" in data
-    assert "message" in data
-    assert "configuration" in data
-    assert "hint" in data
+
+    error = data["error"]
+    assert "type" in error
+    assert "message" in error
+    assert "context" in error
 
     # Check message content
-    assert "AS_A_MCP_SERVER" in data["message"]
-    assert "set to false" in data["message"]
-    assert "AS_A_MCP_SERVER=true" in data["message"]
+    assert "AS_A_MCP_SERVER" in error["message"]
+    assert "set to false" in error["message"]
+    assert "AS_A_MCP_SERVER=true" in error["message"]
 
-    # Check hint
-    assert "ENABLE_MCP_SYSTEM=true" in data["hint"]
+    # Check context
+    assert "hint" in error["context"]
+    assert "ENABLE_MCP_SYSTEM=true" in error["context"]["hint"]

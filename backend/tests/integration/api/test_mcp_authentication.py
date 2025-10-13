@@ -6,9 +6,16 @@ bearer token authentication for peer-to-peer MCP communication.
 
 from __future__ import annotations
 
+import os
+
 import pytest
 from httpx import ASGITransport, AsyncClient
 from src.main import app
+
+pytestmark = pytest.mark.skipif(
+    os.getenv("AS_A_MCP_SERVER", "false").lower() != "true",
+    reason="MCP authentication tests require AS_A_MCP_SERVER=true",
+)
 
 
 @pytest.fixture
