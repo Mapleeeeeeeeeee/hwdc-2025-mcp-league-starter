@@ -26,6 +26,7 @@ export function ChatInput({
   const tChat = useTranslations("common.chat");
   const [inputValue, setInputValue] = useState("");
   const [historyIndex, setHistoryIndex] = useState(-1);
+  const [isComposing, setIsComposing] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const placeholder = useMemo(() => tChat("inputPlaceholder"), [tChat]);
@@ -52,8 +53,8 @@ export function ChatInput({
         return;
       }
 
-      // Enter without Shift: submit
-      if (event.key === "Enter" && !event.shiftKey) {
+      // Enter without Shift: submit (but not during IME composition)
+      if (event.key === "Enter" && !event.shiftKey && !isComposing) {
         event.preventDefault();
         if (!disabled && inputValue.trim()) {
           const form = event.currentTarget.form;
@@ -95,7 +96,7 @@ export function ChatInput({
         }
       }
     },
-    [historyIndex, inputValue, disabled, messages],
+    [historyIndex, inputValue, disabled, messages, isComposing],
   );
 
   const handleInputChange = useCallback(
@@ -109,6 +110,15 @@ export function ChatInput({
     [historyIndex],
   );
 
+  // Handle composition events for IME (Chinese, Japanese, etc.)
+  const handleCompositionStart = useCallback(() => {
+    setIsComposing(true);
+  }, []);
+
+  const handleCompositionEnd = useCallback(() => {
+    setIsComposing(false);
+  }, []);
+
   return (
     <motion.div
       whileFocus={{ scale: 1.01 }}
@@ -120,6 +130,8 @@ export function ChatInput({
           value={inputValue}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
+          onCompositionStart={handleCompositionStart}
+          onCompositionEnd={handleCompositionEnd}
           disabled={disabled}
           placeholder={placeholder}
           rows={3}
