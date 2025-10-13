@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 from dataclasses import dataclass
 from enum import Enum
@@ -118,6 +119,30 @@ class MCPParamsManager:
 
     def __init__(self, settings: MCPSettings | None = None) -> None:
         self.settings = settings or mcp_settings
+
+    def _replace_placeholders(self, args: list[str]) -> list[str]:
+        """
+        Replace placeholder variables in arguments list.
+
+        Supported placeholders:
+        - {BASE_PATH}: Replaced with MCP_BASE_PATH env var or current working directory
+
+        Args:
+            args: List of argument strings that may contain placeholders
+
+        Returns:
+            List of arguments with placeholders replaced
+        """
+        # Get base path from environment or use current directory
+        base_path = os.getenv("MCP_BASE_PATH", os.getcwd())
+
+        # Replace placeholders in each argument
+        replaced_args = []
+        for arg in args:
+            replaced_arg = arg.replace("{BASE_PATH}", base_path)
+            replaced_args.append(replaced_arg)
+
+        return replaced_args
 
     def get_default_params(self) -> list[MCPServerParams]:
         configs: list[MCPServerParams] = []
@@ -277,6 +302,8 @@ class MCPParamsManager:
         args = data.get("args") or None
         if isinstance(args, list):
             args = [str(arg) for arg in args]
+            # Replace placeholders in args
+            args = self._replace_placeholders(args)
         elif args is not None:
             logger.warning("Ignoring non-list args for MCP server '%s'", name)
             args = None

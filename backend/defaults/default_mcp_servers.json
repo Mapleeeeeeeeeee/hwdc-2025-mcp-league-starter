@@ -26,6 +26,7 @@
       "description": "Microsoft 365 services integration (personal mode)"
     },
     "word-document-server": {
+      "type": "stdio",
       "command": "uvx",
       "args": ["--from", "office-word-mcp-server", "word_mcp_server"],
       "env": {},
@@ -34,6 +35,7 @@
       "description": "Microsoft Word document analysis tools"
     },
     "ppt": {
+      "type": "stdio",
       "command": "uvx",
       "args": [
         "--from", "office-powerpoint-mcp-server", "ppt_mcp_server"
