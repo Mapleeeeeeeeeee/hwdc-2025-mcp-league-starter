@@ -56,6 +56,8 @@ export function ChatShell({
   const [selectedTools, setSelectedTools] = useState<McpToolSelection[]>(
     defaultTools ?? [],
   );
+  const [promptKey, setPromptKey] = useState<string | undefined>();
+  const [selectedAgnoTools, setSelectedAgnoTools] = useState<string[]>([]);
 
   // Queries
   const modelsQuery = useConversationModels();
@@ -93,9 +95,18 @@ export function ChatShell({
       initialMessages,
       userId,
       modelKey: selectedModelKey,
+      promptKey,
       tools: selectedTools,
       supportsStreaming,
     },
+  );
+
+  // Send message directly without frontend enhancement
+  const handleSendMessage = useCallback(
+    (content: string) => {
+      sendMessage(content);
+    },
+    [sendMessage],
   );
 
   const hasMessages = messages.length > 0;
@@ -229,11 +240,15 @@ export function ChatShell({
             mcpServers={availableServers}
             selectedTools={selectedTools}
             onToolsChange={setSelectedTools}
+            promptKey={promptKey}
+            onPromptKeyChange={setPromptKey}
+            selectedAgnoTools={selectedAgnoTools}
+            onAgnoToolsChange={setSelectedAgnoTools}
           />
 
           {/* Input */}
           <ChatInput
-            onSubmit={sendMessage}
+            onSubmit={handleSendMessage}
             disabled={isBusy}
             messages={messages}
             error={error}

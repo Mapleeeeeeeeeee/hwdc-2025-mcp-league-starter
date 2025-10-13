@@ -1,0 +1,19 @@
+{
+  "prompts": {
+    "sectionTitle": "Prompt Preset",
+    "loading": "Loading prompts...",
+    "default": "Default instructions",
+    "defaultDescription": "Standard behavior",
+    "instructions": "{count} instructions"
+  },
+  "tools": {
+    "sectionTitle": "Agno Tools",
+    "loading": "Loading tools...",
+    "noToolsSelected": "No tools selected",
+    "selectedCount": "{count} selected",
+    "selectTools": "Select Tools",
+    "selectAll": "All",
+    "clearAll": "Clear",
+    "footer": "Selected tools will be suggested in the prompt"
+  }
+}

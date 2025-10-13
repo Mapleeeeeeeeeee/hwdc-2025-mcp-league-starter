@@ -1,0 +1,19 @@
+{
+  "prompts": {
+    "sectionTitle": "提示預設",
+    "loading": "載入提示中...",
+    "default": "預設指令",
+    "defaultDescription": "標準行為",
+    "instructions": "{count} 條指令"
+  },
+  "tools": {
+    "sectionTitle": "Agno 工具",
+    "loading": "載入工具中...",
+    "noToolsSelected": "未選擇工具",
+    "selectedCount": "已選 {count} 個",
+    "selectTools": "選擇工具",
+    "selectAll": "全選",
+    "clearAll": "清除",
+    "footer": "已選工具將在提示中建議使用"
+  }
+}
