@@ -104,10 +104,11 @@ describe("Conversation Client", () => {
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       mockFetchEventSource.mockImplementation((_url: any, options: any) => {
-        // Simulate onmessage callback with SSE-formatted data
+        // Simulate onmessage callback
+        // Note: fetchEventSource already parses SSE format, so event.data is just the JSON string
         if (options.onmessage) {
           options.onmessage({
-            data: 'data: {"delta": "test chunk"}',
+            data: '{"delta": "test chunk"}',
             event: "",
             id: "",
           });

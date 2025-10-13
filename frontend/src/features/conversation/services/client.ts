@@ -1,5 +1,7 @@
 import { apiClient } from "@/lib/api/api-client";
 import { API_PATHS } from "@/lib/api/paths";
+import { ApiError } from "@/lib/api/api-error";
+import { config } from "@/lib/config";
 import { fetchEventSource } from "@microsoft/fetch-event-source";
 
 import type {
@@ -11,12 +13,9 @@ import type {
 
 type StreamEventHandlers = {
   onChunk?: (chunk: ConversationStreamChunk) => void;
-  onError?: (error: Error) => void;
+  onError?: (error: ApiError) => void;
   onComplete?: () => void;
 };
-
-const SSE_EVENT_PREFIX = "event:";
-const SSE_DATA_PREFIX = "data:";
 
 function buildAbsoluteUrl(path: string): string {
   if (!path.startsWith("/")) {
@@ -62,22 +61,69 @@ export function streamConversationRequest(
     signal: controller.signal,
     openWhenHidden: true,
     onmessage(event) {
-      handleEvent(event.data, handlers);
+      // event.data is already the parsed data (without "data:" prefix)
+      // event.event contains the event type (if any)
+
+      // Skip empty messages
+      if (!event.data || event.data.trim() === "") {
+        return;
+      }
+
+      if (event.event === "error") {
+        const errorData = safeParseError(event.data);
+        // Convert streaming error to ApiError for consistent error handling
+        const apiError = new ApiError(
+          500, // Streaming errors are considered server errors
+          errorData.type || "StreamingError",
+          undefined, // No trace_id in streaming errors
+          errorData.message || "Streaming error occurred",
+          errorData.i18n_key,
+          errorData.i18n_params,
+        );
+        handlers.onError?.(apiError);
+        return;
+      }
+
+      try {
+        const chunk = JSON.parse(event.data) as ConversationStreamChunk;
+        handlers.onChunk?.(chunk);
+      } catch (error) {
+        // Log parsing errors in development for debugging
+        if (config.isDevelopment) {
+          console.warn("[Streaming] Failed to parse chunk:", {
+            data: event.data,
+            error: error instanceof Error ? error.message : String(error),
+          });
+        }
+        // Don't throw error for parsing failures - might be heartbeat or other non-JSON data
+        // The stream will continue with next chunk
+      }
     },
     async onopen(response) {
       if (response.ok) {
         // Connection opened successfully
       } else {
-        handlers.onError?.(
-          new Error(`Streaming request failed with status ${response.status}`),
+        const apiError = new ApiError(
+          response.status,
+          "StreamConnectionError",
+          undefined,
+          `Streaming request failed with status ${response.status}`,
         );
+        handlers.onError?.(apiError);
       }
     },
     onerror(error) {
       if (!controller.signal.aborted) {
-        handlers.onError?.(
-          error instanceof Error ? error : new Error(String(error)),
-        );
+        const apiError =
+          error instanceof ApiError
+            ? error
+            : new ApiError(
+                500,
+                "StreamNetworkError",
+                undefined,
+                error instanceof Error ? error.message : String(error),
+              );
+        handlers.onError?.(apiError);
       }
     },
     onclose() {
@@ -90,54 +136,22 @@ export function streamConversationRequest(
   return controller;
 }
 
-function handleEvent(eventPayload: string, handlers: StreamEventHandlers) {
-  const lines = eventPayload
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
+type StreamErrorData = {
+  type?: string;
+  message?: string;
+  context?: Record<string, unknown>;
+  i18n_key?: string;
+  i18n_params?: Record<string, string | number>;
+};
 
-  if (lines.length === 0) {
-    return;
-  }
-
-  let eventType = "message";
-  const dataLines: string[] = [];
-
-  for (const line of lines) {
-    if (line.startsWith(SSE_EVENT_PREFIX)) {
-      eventType = line.slice(SSE_EVENT_PREFIX.length).trim();
-    } else if (line.startsWith(SSE_DATA_PREFIX)) {
-      dataLines.push(line.slice(SSE_DATA_PREFIX.length).trim());
-    }
-  }
-
-  if (dataLines.length === 0) {
-    return;
-  }
-
-  const payloadRaw = dataLines.join("\n");
-
-  if (eventType === "error") {
-    const errorMessage = safeParseError(payloadRaw);
-    handlers.onError?.(new Error(errorMessage));
-    return;
-  }
-
+function safeParseError(payload: string): StreamErrorData {
   try {
-    const chunk = JSON.parse(payloadRaw) as ConversationStreamChunk;
-    handlers.onChunk?.(chunk);
-  } catch (error) {
-    handlers.onError?.(
-      error instanceof Error ? error : new Error(String(error)),
-    );
-  }
-}
-
-function safeParseError(payload: string): string {
-  try {
-    const parsed = JSON.parse(payload) as { message?: string };
-    return parsed.message ?? "Streaming error";
+    const parsed = JSON.parse(payload) as StreamErrorData;
+    return parsed;
   } catch {
-    return payload || "Streaming error";
+    return {
+      type: "ParseError",
+      message: payload || "Streaming error",
+    };
   }
 }

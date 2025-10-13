@@ -14,6 +14,7 @@ import { useConversation } from "@/features/conversation/hooks/useConversation";
 import { ChatMessage, ChatMessageLoading } from "./ChatMessage";
 import { ChatInput } from "./ChatInput";
 import { ChatControls } from "./ChatControls";
+import { ModelSelector } from "@/components/ui/ModelSelector";
 import { staggerContainer } from "@/lib/utils";
 
 import type { ConversationMessage } from "@/features/conversation";
@@ -87,16 +88,22 @@ export function ChatShell({
   const supportsStreaming = Boolean(selectedModel?.supportsStreaming);
 
   // Conversation hook
-  const { messages, isStreaming, isBusy, error, sendMessage } = useConversation(
-    {
-      conversationId,
-      initialMessages,
-      userId,
-      modelKey: selectedModelKey,
-      tools: selectedTools,
-      supportsStreaming,
-    },
-  );
+  const {
+    messages,
+    isStreaming,
+    isBusy,
+    error,
+    sendMessage,
+    isStreamingEnabled,
+    setIsStreamingEnabled,
+  } = useConversation({
+    conversationId,
+    initialMessages,
+    userId,
+    modelKey: selectedModelKey,
+    tools: selectedTools,
+    supportsStreaming,
+  });
 
   const hasMessages = messages.length > 0;
 
@@ -131,14 +138,30 @@ export function ChatShell({
         <motion.header
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="space-y-2 text-center"
+          className="space-y-4 text-center"
         >
-          <h1 className="bg-gradient-to-b from-white via-white/90 to-white/60 bg-clip-text text-3xl font-bold text-transparent md:text-4xl">
-            {title}
-          </h1>
-          {subtitle && (
-            <p className="text-sm text-white/60 md:text-base">{subtitle}</p>
-          )}
+          <div className="space-y-2">
+            <h1 className="bg-gradient-to-b from-white via-white/90 to-white/60 bg-clip-text text-3xl font-bold text-transparent md:text-4xl">
+              {title}
+            </h1>
+            {subtitle && (
+              <p className="text-sm text-white/60 md:text-base">{subtitle}</p>
+            )}
+          </div>
+
+          {/* Model Selector */}
+          <div className="flex justify-center">
+            <div className="w-full max-w-md">
+              <ModelSelector
+                models={models}
+                selectedModelKey={selectedModelKey}
+                activeModelKey={activeModelKey}
+                onSelect={setSelectedModelKey}
+                onSetAsDefault={handleSetAsDefault}
+                isPending={setActiveModelMutation.isPending}
+              />
+            </div>
+          </div>
         </motion.header>
       )}
 
@@ -220,12 +243,9 @@ export function ChatShell({
         {/* Controls */}
         <div className="space-y-4">
           <ChatControls
-            models={models}
-            selectedModelKey={selectedModelKey}
-            activeModelKey={activeModelKey}
-            onModelSelect={setSelectedModelKey}
-            onSetAsDefault={handleSetAsDefault}
-            isSettingDefault={setActiveModelMutation.isPending}
+            supportsStreaming={supportsStreaming}
+            isStreamingEnabled={isStreamingEnabled}
+            onStreamingToggle={setIsStreamingEnabled}
             mcpServers={availableServers}
             selectedTools={selectedTools}
             onToolsChange={setSelectedTools}
