@@ -13,23 +13,6 @@ const nextConfig: NextConfig = {
   outputFileTracingRoot: path.join(__dirname, "../"),
   // Enable standalone output for Docker deployment
   output: "standalone",
-
-  // Development API proxy: route /api/* to backend server
-  // In production, Nginx handles this routing
-  async rewrites() {
-    const isDevelopment = process.env.NODE_ENV !== "production";
-    const backendUrl = process.env.DEV_BACKEND_URL || "http://localhost:8000";
-
-    if (isDevelopment) {
-      return [
-        {
-          source: "/api/:path*",
-          destination: `${backendUrl}/api/:path*`,
-        },
-      ];
-    }
-    return [];
-  },
 };
 
 export default withNextIntl(nextConfig);
