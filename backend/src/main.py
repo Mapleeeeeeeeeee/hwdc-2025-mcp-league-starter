@@ -42,9 +42,11 @@ if settings.as_a_mcp_server:
 async def lifespan(app: FastAPI):
     """Handle application startup and shutdown events."""
     # Start FastMCP lifespan for internal MCP server functionality
-    # Create a temporary http_app for lifespan management
-    internal_mcp_app = mcp_server.http_app(path="/")
-    async with internal_mcp_app.lifespan(app):
+    # Use the same http_app instance that will be mounted
+    mcp_app_for_lifespan = (
+        mcp_http_app if mcp_http_app is not None else mcp_server.http_app(path="/")
+    )
+    async with mcp_app_for_lifespan.lifespan(app):
         # Initialize MCP system on startup
         await initialize_mcp_system()
 
