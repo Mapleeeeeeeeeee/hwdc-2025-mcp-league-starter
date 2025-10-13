@@ -46,6 +46,13 @@ cp .env.docker.example .env.docker
 cd backend && cp .env.example .env && cd ..
 # 編輯 backend/.env，設置 OPENAI_API_KEY 和 MCP_SERVER_AUTH_TOKEN
 # 可選：設置 AS_A_MCP_SERVER=true 如果需要將後端作為 MCP 服務器運行
+
+# 5. （可選）設置自定義配置
+## 如果您需要自定義 LLM 模型、提示詞或工具配置：
+pnpm run setup:config
+## 或者手動複製：
+cd backend && mkdir -p config && for file in defaults/default_*.json; do base=$(basename "$file" | sed 's/^default_//'); target="config/$base"; if [ ! -f "$target" ]; then cp "$file" "$target"; fi; done && cd ..
+## 然後編輯 config/ 下的檔案來自定義配置
 ```
 
 ### 啟動開發環境
@@ -115,6 +122,15 @@ cd ..
 ```
 ├── frontend/              # Next.js 前端應用
 ├── backend/               # FastAPI 後端服務
+│   ├── config/            # 運行時配置檔案（已忽略 git）
+│   │   ├── defaults/      # 預設配置模板
+│   │   │   ├── default_llm_models.json
+│   │   │   ├── default_active_llm_model.json
+│   │   │   ├── default_agno_prompts.json
+│   │   │   └── default_agno_tools.json
+│   │   ├── mcp_servers.json # MCP 伺服器配置
+│   │   └── ...            # 其他配置檔案
+│   └── src/
 ├── docs/                  # 專案文檔
 ├── scripts/               # 部署和工具腳本
 ├── .github/
@@ -133,6 +149,51 @@ cd ..
 └── start.sh              # Cloud Run 啟動腳本
 ```
 
+## ⚙️ 配置檔案說明
+
+本專案採用「預設值 + 自定義配置」的設計模式：
+
+### 📋 配置檔案結構
+
+- **`backend/defaults/`** - 預設配置模板（已提交到 Git）
+  - `default_llm_models.json` - LLM 模型配置模板
+  - `default_active_llm_model.json` - 預設啟用模型配置
+  - `default_agno_prompts.json` - 提示詞配置模板
+  - `default_agno_tools.json` - 工具配置模板
+
+- **`backend/src/integrations/mcp/default_servers.json`** - MCP 伺服器預設配置模板
+
+- **`backend/config/`** - 用戶自定義配置（已忽略 Git）
+  - 當這些檔案不存在時，系統會自動從 `defaults/` 或 `src/integrations/mcp/` 複製預設值
+  - 用戶可以安全修改這些檔案來自定義配置
+  - 修改不會影響版本控制
+
+### 🔄 配置載入邏輯
+
+1. **首次運行**：如果 `config/` 下的檔案不存在，自動從 `defaults/` 複製
+2. **後續運行**：直接載入 `config/` 下的檔案
+3. **模板保持**：`defaults/` 檔案始終作為原始模板，不會被修改
+
+### 🛠️ 自定義配置
+
+要自定義配置，請編輯 `backend/config/` 下的對應檔案：
+
+```bash
+# 編輯 LLM 模型配置
+vim backend/config/llm_models.json
+
+# 編輯提示詞配置
+vim backend/config/agno_prompts.json
+
+# 編輯工具配置
+vim backend/config/agno_tools.json
+
+# 編輯 MCP 伺服器配置
+vim backend/config/mcp_servers.json
+```
+
+**注意**：`backend/config/` 目錄已被加入 `.gitignore`，您的自定義配置不會被提交到版本控制系統。
+
 ## 💻 開發指令
 
 ### 專案設置
@@ -141,6 +202,7 @@ cd ..
 pnpm run install:all    # 安裝所有依賴（前端 + 後端）
 pnpm run setup:env      # 設置 Docker 環境變數
 pnpm run setup:env:local # 設置本地開發環境變數
+pnpm run setup:config   # 設置配置檔案模板（可選）
 ```
 
 ### 本地開發模式

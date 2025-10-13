@@ -7,6 +7,7 @@
     "install:all": "pnpm install && cd backend && uv sync && cd ..",
     "setup:env": "cp .env.docker.example .env.docker && echo '\\n✅ 已複製 .env.docker.example 到 .env.docker\\n請編輯 .env.docker 並設置以下變數：\\n- OPENAI_API_KEY\\n- MCP_SERVER_AUTH_TOKEN\\n\\n可選變數：\\n- AS_A_MCP_SERVER（設為 true 將後端作為 MCP 服務器運行）\\n\\n生成安全令牌：openssl rand -base64 32'",
     "setup:env:local": "cd backend && cp .env.example .env && cd .. && echo '\\n✅ 已複製 backend/.env.example 到 backend/.env\\n請編輯 backend/.env 並設置以下變數：\\n- OPENAI_API_KEY\\n- MCP_SERVER_AUTH_TOKEN\\n\\n可選變數：\\n- AS_A_MCP_SERVER（設為 true 將後端作為 MCP 服務器運行）'",
+    "setup:config": "cd backend && mkdir -p config && for file in defaults/default_*.json; do base=$(basename \"$file\" | sed 's/^default_//'); target=\"config/$base\"; if [ ! -f \"$target\" ]; then cp \"$file\" \"$target\" && echo \"✅ 複製 $file → $target\"; else echo \"⏭️  跳過 $target（檔案已存在）\"; fi; done && echo '\\n🎉 配置檔案設置完成！\\n您現在可以編輯以下檔案來自定義配置：\\n- backend/config/llm_models.json\\n- backend/config/active_llm_model.json\\n- backend/config/agno_prompts.json\\n- backend/config/agno_tools.json\\n\\n注意：backend/config/ 目錄已被 .gitignore 忽略，您的修改不會被提交到 Git' && cd ..",
     "dev": "concurrently \"cd backend && uv run server.py\" \"pnpm --filter frontend dev\"",
     "dev:frontend": "pnpm --filter frontend dev",
     "dev:backend": "cd backend && uv run server.py",

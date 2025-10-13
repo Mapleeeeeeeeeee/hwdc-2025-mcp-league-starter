@@ -44,7 +44,22 @@ class ToolsConfigStore:
         """Load tools configuration from JSON file."""
         if self._config is None:
             if not self._config_path.exists():
-                self._config = AgnoToolsConfig()
+                # Load default configuration
+                default_path = (
+                    Path(__file__).parent.parent.parent.parent
+                    / "defaults"
+                    / "default_agno_tools.json"
+                )
+                if default_path.exists():
+                    with default_path.open("r", encoding="utf-8") as f:
+                        data = json.load(f)
+                        self._config = AgnoToolsConfig.model_validate(data)
+                    # Copy default to config location
+                    self._config_path.parent.mkdir(parents=True, exist_ok=True)
+                    with self._config_path.open("w", encoding="utf-8") as f:
+                        json.dump(data, f, indent=2)
+                else:
+                    self._config = AgnoToolsConfig()
             else:
                 with self._config_path.open("r", encoding="utf-8") as f:
                     data = json.load(f)
