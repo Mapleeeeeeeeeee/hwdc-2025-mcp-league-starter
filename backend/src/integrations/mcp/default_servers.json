@@ -13,18 +13,6 @@
       "enabled": true,
       "description": "Filesystem browsing tools"
     },
-    "Context7": {
-      "type": "stdio",
-      "command": "npx",
-      "args": [
-        "-y",
-        "@upstash/context7-mcp@latest"
-      ],
-      "env": {},
-      "timeout_seconds": 60,
-      "enabled": true,
-      "description": "Context7 documentation tools"
-    },
     "ms365": {
       "type": "stdio",
       "command": "npx",

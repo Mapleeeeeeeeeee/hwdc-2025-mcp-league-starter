@@ -42,7 +42,7 @@ indent-style = "space"
 [tool.mypy]
 python_version = "3.12"
 ignore_missing_imports = true
-files = ["src/"]
+exclude = "tests/"
 
 [tool.pytest.ini_options]
 markers = [
