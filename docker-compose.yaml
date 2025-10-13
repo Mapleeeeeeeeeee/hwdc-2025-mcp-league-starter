@@ -9,9 +9,23 @@ services:
     ports:
       - "${EXTERNAL_PORT:-8080}:8080"
     environment:
-      # Fixed configuration that doesn't need to be in .env.docker
+      # Server Configuration
+      - ENVIRONMENT=${ENVIRONMENT:-development}
       - HOST=0.0.0.0
+      - PORT=${BACKEND_PORT:-8000}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+
+      # CORS Configuration
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-http://localhost:8080}
+
+      # OpenAI Configuration
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+
+      # MCP Configuration
+      - ENABLE_MCP_SYSTEM=${ENABLE_MCP_SYSTEM:-true}
       - MCP_TIMEOUT_SECONDS=60
+      - MCP_SERVER_AUTH_TOKEN=${MCP_SERVER_AUTH_TOKEN}
+      - AS_A_MCP_SERVER=${AS_A_MCP_SERVER:-false}
 
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]

@@ -150,14 +150,18 @@ jobs:
 
     - name: Create test environment file
       run: |
-        cp .env.docker.example .env.docker
-        # Override with test values for CI
-        cat >> .env.docker << 'EOF'
-        # CI Test Configuration (override example values)
+        cat > .env.docker << 'EOF'
+        EXTERNAL_PORT=8080
+        ENVIRONMENT=test
+        BACKEND_PORT=8000
+        LOG_LEVEL=INFO
+        CORS_ALLOWED_ORIGINS=http://localhost:8080
         OPENAI_API_KEY=sk-test-key-for-ci-testing
-        MCP_SERVER_AUTH_TOKEN=test-token-for-ci
+        ENABLE_MCP_SYSTEM=true
+        MCP_SERVER_AUTH_TOKEN=test-token-for-ci-only
         AS_A_MCP_SERVER=false
         EOF
+        
         # Verify the file was created correctly
         echo "=== .env.docker contents ==="
         cat .env.docker
@@ -171,6 +175,17 @@ jobs:
 
     - name: Start Docker services
       run: |
+        # Export environment variables and start services
+        export EXTERNAL_PORT=8080
+        export ENVIRONMENT=test
+        export BACKEND_PORT=8000
+        export LOG_LEVEL=INFO
+        export CORS_ALLOWED_ORIGINS=http://localhost:8080
+        export OPENAI_API_KEY=sk-test-key-for-ci-testing
+        export ENABLE_MCP_SYSTEM=true
+        export MCP_SERVER_AUTH_TOKEN=test-token-for-ci-only
+        export AS_A_MCP_SERVER=false
+        
         docker compose up -d
 
     - name: Wait for services to be healthy
