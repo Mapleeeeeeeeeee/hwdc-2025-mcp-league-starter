@@ -1,4 +1,9 @@
 # Import all business exceptions from their respective modules
+from .agno import (
+    PromptNotFoundError,
+    ToolkitLoadError,
+    ToolkitNotFoundError,
+)
 from .document import (
     DocumentAccessDeniedError,
     DocumentLockedError,
@@ -44,6 +49,10 @@ from .validation import (
 # ============================================================================
 
 __all__ = [
+    # Agno-related exceptions
+    "ToolkitLoadError",
+    "ToolkitNotFoundError",
+    "PromptNotFoundError",
     # User-related exceptions
     "UserNotFoundError",
     "UserAlreadyExistsError",

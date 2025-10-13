@@ -14,8 +14,8 @@ repos:
     rev: v1.12.1
     hooks:
       - id: mypy
-        files: ^backend/
-        args: [--ignore-missing-imports, backend/]
+        files: ^backend/src/
+        args: [--ignore-missing-imports, backend/src/]
         pass_filenames: false
 
   # TypeScript/JavaScript linting and formatting

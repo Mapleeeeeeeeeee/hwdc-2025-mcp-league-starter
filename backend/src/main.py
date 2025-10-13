@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from src.api.exception_handlers import register_exception_handlers
 from src.api.mcp_server import initialize_mcp_server
+from src.api.v1.agno_router import router as agno_router
 from src.api.v1.conversation_router import router as conversation_router
 from src.api.v1.mcp_router import router as mcp_router
 from src.config import settings
@@ -88,6 +89,7 @@ register_exception_handlers(app)
 # Register routers
 app.include_router(conversation_router, prefix="/api/v1")
 app.include_router(mcp_router, prefix="/api/v1")
+app.include_router(agno_router, prefix="/api/v1")
 
 # Mount FastMCP server at /mcp endpoint for peer-to-peer MCP communication
 # Authentication is configured in mcp_server initialization
