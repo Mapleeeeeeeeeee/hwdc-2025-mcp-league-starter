@@ -181,6 +181,11 @@ MCP_SERVER_AUTH_TOKEN=test-workshop-token-123
 
 **設定 filesystem MCP server 指向你的桌面：**
 
+```bash
+# 設置本地開發預設檔案
+pnpm run setup:config
+```
+
 1. **開啟 MCP 配置檔：**
    ```bash
    code backend/config/mcp_servers.json
@@ -217,11 +222,7 @@ MCP_SERVER_AUTH_TOKEN=test-workshop-token-123
 
 4. **將路徑貼到 `args` 的最後一個元素**
 
-5. **儲存檔案並重啟後端：**
-   ```bash
-   # 按 Ctrl + C 停止
-   pnpm dev
-   ```
+5. **儲存檔案：**
 
 **✅ 檢查點：**
 - `args` 的第三個元素是你的桌面完整路徑
@@ -240,13 +241,18 @@ pnpm dev
 **✅ 成功標誌 - 你應該在終端機看到：**
 
 ```
-> hwdc-2025-mcp-league-starter@1.0.0 dev
-> concurrently "pnpm:dev:frontend" "pnpm:dev:backend"
+[1]    ▲ Next.js 15.5.3 (Turbopack)
+[1]    - Local:        http://localhost:3001
+[1]    - Network:      http://192.168.31.79:3001
+[1] 
+[1]  ✓ Starting...
+[1]  ✓ Compiled middleware in 125ms
+[1]  ✓ Ready in 1119ms
 
-[backend] INFO:     Uvicorn running on http://127.0.0.1:8000
-[frontend] ✓ Starting...
-[frontend] ✓ Ready in 2.3s
-[frontend]   Local:   http://localhost:3001
+...
+
+[0] 2025-10-14 06:03:32,375 | INFO | src.integrations.mcp.manager:87 | MCP system initialisation complete
+[0] 2025-10-14 06:03:32,375 | INFO | uvicorn.error:62 | Application startup complete.
 ```
 
 **⚠️ 常見錯誤處理：**
