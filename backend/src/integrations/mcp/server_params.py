@@ -193,7 +193,11 @@ class MCPParamsManager:
                 logger.error("Invalid MCP servers JSON at %s: %s", custom_path, exc)
                 return None
 
-        default_path = Path(__file__).with_name("default_servers.json")
+        default_path = (
+            Path(__file__).parent.parent.parent
+            / "defaults"
+            / "default_mcp_servers.json"
+        )
         try:
             with default_path.open("r", encoding="utf-8") as fp:
                 logger.info("Using bundled MCP server defaults: %s", default_path)

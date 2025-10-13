@@ -30,7 +30,7 @@ MCP 整合支援兩種傳輸方式：
 
 ## 設定檔與 JSON 格式
 
-預設會從 `backend/config/mcp_servers.json` 載入客製化設定；若檔案不存在，則回退為 `backend/src/integrations/mcp/default_servers.json`。
+預設會從 `backend/config/mcp_servers.json` 載入客製化設定；若檔案不存在，則回退為 `backend/defaults/default_mcp_servers.json`。
 
 ### stdio 伺服器配置範例
 

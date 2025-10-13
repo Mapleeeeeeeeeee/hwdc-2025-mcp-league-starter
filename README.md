@@ -161,7 +161,7 @@ cd ..
   - `default_agno_prompts.json` - 提示詞配置模板
   - `default_agno_tools.json` - 工具配置模板
 
-- **`backend/src/integrations/mcp/default_servers.json`** - MCP 伺服器預設配置模板
+- **`backend/defaults/default_mcp_servers.json`** - MCP 伺服器預設配置模板
 
 - **`backend/config/`** - 用戶自定義配置（已忽略 Git）
   - 當這些檔案不存在時，系統會自動從 `defaults/` 或 `src/integrations/mcp/` 複製預設值

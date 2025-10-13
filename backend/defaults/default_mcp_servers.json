@@ -25,6 +25,31 @@
       "enabled": true,
       "description": "Microsoft 365 services integration (personal mode)"
     },
+    "word-document-server": {
+      "command": "uvx",
+      "args": ["--from", "office-word-mcp-server", "word_mcp_server"],
+      "env": {},
+      "timeout_seconds": 60,
+      "enabled": false,
+      "description": "Microsoft Word document analysis tools"
+    },
+    "ppt": {
+      "command": "uvx",
+      "args": [
+        "--from", "office-powerpoint-mcp-server", "ppt_mcp_server"
+      ],
+      "env": {},
+      "timeout_seconds": 60,
+      "enabled": false,
+      "description": "Microsoft PowerPoint presentation analysis tools"
+    },
+    "Context7": {
+      "type": "http",
+      "url": "https://mcp.context7.com/mcp",
+      "timeout_seconds": 60,
+      "enabled": false,
+      "description": "Context7 documentation "
+    },
     "_example_http_server": {
       "type": "http",
       "url": "https://api.example.com/mcp",
@@ -35,13 +60,6 @@
       "timeout_seconds": 60,
       "enabled": false,
       "description": "Example HTTP MCP server (disabled by default)"
-    },
-    "_example_http_no_auth": {
-      "type": "http",
-      "url": "http://localhost:8000/mcp",
-      "timeout_seconds": 30,
-      "enabled": false,
-      "description": "Example local HTTP MCP server without authentication"
     }
   }
 }
