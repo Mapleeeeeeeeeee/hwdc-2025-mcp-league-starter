@@ -89,8 +89,11 @@ RUN ln -sf /usr/local/bin/python3.12 /usr/local/bin/python3 && \
     ln -sf /usr/local/lib/libpython3.12.so.1.0 /usr/local/lib/libpython3.12.so && \
     ldconfig
 
-# Install uv in runtime
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+# Install uv and uvx in runtime using the official installer
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
+    mv /root/.local/bin/uv /usr/local/bin/uv && \
+    (mv /root/.local/bin/uvx /usr/local/bin/uvx 2>/dev/null || true) && \
+    (test -f /usr/local/bin/uvx || ln -sf /usr/local/bin/uv /usr/local/bin/uvx)
 
 # Create app directories
 WORKDIR /app

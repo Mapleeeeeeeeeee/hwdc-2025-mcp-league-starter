@@ -10,6 +10,7 @@ const appConfigSchema = z.object({
   isProduction: z.boolean(),
   apiTimeout: z.number().min(1000).max(300000),
   apiTimeoutLongRunning: z.number().min(1000).max(600000),
+  apiTimeoutConversation: z.number().min(1000).max(600000),
 });
 
 type AppConfig = z.infer<typeof appConfigSchema>;
@@ -19,6 +20,7 @@ const rawEnv = {
   nodeEnv: process.env.NODE_ENV,
   apiTimeout: process.env.NEXT_PUBLIC_API_TIMEOUT,
   apiTimeoutLongRunning: process.env.NEXT_PUBLIC_API_TIMEOUT_LONG_RUNNING,
+  apiTimeoutConversation: process.env.NEXT_PUBLIC_API_TIMEOUT_CONVERSATION,
 };
 
 function createConfig(): AppConfig {
@@ -33,7 +35,11 @@ function createConfig(): AppConfig {
 
   const apiTimeoutLongRunning = rawEnv.apiTimeoutLongRunning
     ? parseInt(rawEnv.apiTimeoutLongRunning, 10)
-    : 300000;
+    : 120000;
+
+  const apiTimeoutConversation = rawEnv.apiTimeoutConversation
+    ? parseInt(rawEnv.apiTimeoutConversation, 10)
+    : 180000;
 
   return appConfigSchema.parse({
     appEnv: resolvedAppEnv,
@@ -42,6 +48,7 @@ function createConfig(): AppConfig {
     isProduction: resolvedAppEnv === "production",
     apiTimeout,
     apiTimeoutLongRunning,
+    apiTimeoutConversation,
   });
 }
 

@@ -11,6 +11,7 @@ from src.core.logging import get_logger
 from src.integrations.llm import ConversationAgentFactory
 from src.integrations.mcp import manager as mcp_manager_module  # Keep for type hinting
 from src.integrations.mcp.config import mcp_settings
+from src.models import MCPToolSelection
 from src.models.conversation import ConversationMessage, ConversationRequest
 from src.models.mcp import (
     ListMCPServersResponse,
@@ -244,6 +245,7 @@ class MCPChatUsecase:
         model_key: str | None = None,
         conversation_id: str | None = None,
         user_id: str = "peer-caller",
+        tools: list[MCPToolSelection] | None = None,
     ) -> MCPChatResponse:
         """
         Execute a natural language conversation through the local Agent,
@@ -262,7 +264,7 @@ class MCPChatUsecase:
                 conversation_id=conv_id,
                 model_key=model_key,
                 history=[ConversationMessage(role="user", content=message)],
-                tools=None,  # None triggers auto-attachment of all MCP tools
+                tools=tools,  # Use provided tools or None
             )
 
             reply = await usecase.generate_reply(request)

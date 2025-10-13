@@ -17,12 +17,12 @@
     "inputHint": "Enter 送出，Shift + Enter 換行",
     "send": "送出",
     "user": "我",
-    "assistant": "助理",
-    "assistantLabel": "助理",
+    "assistant": "Jarvis",
+    "assistantLabel": "Jarvis",
     "userLabel": "我",
     "status": {
       "pending": "處理中",
-      "generating": "助理正在思考...",
+      "generating": "Jarvis正在思考...",
       "streaming": "串流回覆中"
     },
     "error": {

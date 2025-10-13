@@ -9,6 +9,7 @@ from src.config import settings
 from src.core.logging import get_logger
 from src.integrations.llm import ConversationAgentFactory
 from src.integrations.mcp import manager as mcp_manager
+from src.models import MCPToolSelection
 from src.models.mcp_tools import (
     AppConfigResponse,
     GetServerCapabilitiesResponse,
@@ -90,6 +91,7 @@ def _register_mcp_tools(server: FastMCP):
         model_key: str | None = None,
         conversation_id: str | None = None,
         user_id: str = "peer-caller",
+        tools: list[dict] | None = None,
     ) -> MCPChatResponse:
         """呼叫此功能前，請先依序查詢
         - list_available_models
@@ -100,13 +102,15 @@ def _register_mcp_tools(server: FastMCP):
 
         此功能為主要功能，呼叫他能夠與 LLM 模型進行對話，
         並可選擇不同模型和維持對話上下文。
-        對方會透過自身能力呼叫其他 MCP 伺服器的函數來輔助回答。
+        如果指定 tools，則只使用指定的工具；如果不指定，則不使用任何工具。
 
         Args:
             message (str): 用戶的訊息內容，必填。
             model_key (str | None): 可選的 LLM 模型鍵，如果不指定則使用預設模型。
             conversation_id (str | None): 可選的對話 ID，用於維持上下文和多輪對話。
             user_id (str): 用戶 ID，預設為 "peer-caller"。
+            tools (list[dict] | None): 可選的工具選擇列表，
+                每個 dict 包含 'server' 和可選的 'functions'。
 
         Returns:
             MCPChatResponse: 包含對話回應的 Pydantic 模型，包括 AI 的回覆、對話 ID 等。
@@ -114,7 +118,20 @@ def _register_mcp_tools(server: FastMCP):
         logger.info("MCP tool 'chat' called by user=%s", user_id)
         agent_factory = get_agent_factory()
         chat_usecase = MCPChatUsecase(agent_factory=agent_factory)
-        return await chat_usecase.chat(message, model_key, conversation_id, user_id)
+
+        # Convert tools dict to MCPToolSelection list
+        tool_selections = None
+        if tools:
+            tool_selections = []
+            for tool_dict in tools:
+                selection = MCPToolSelection(
+                    server=tool_dict["server"], functions=tool_dict.get("functions")
+                )
+                tool_selections.append(selection)
+
+        return await chat_usecase.chat(
+            message, model_key, conversation_id, user_id, tool_selections
+        )
 
     @server.tool
     def list_mcp_servers() -> dict:

@@ -15,6 +15,52 @@ from src.shared.exceptions.mcp import MCPToolExecutionError
 
 logger = get_logger(__name__)
 
+# Tool timeout configuration (in seconds)
+# Different tools have different execution time requirements
+TOOL_TIMEOUT_CONFIG = {
+    # Chat and LLM-related tools need more time
+    "chat": 300,  # 5 minutes for chat with LLM
+    "generate": 300,
+    "completion": 300,
+    # Query and list operations are usually fast
+    "list": 30,
+    "get": 30,
+    "query": 30,
+    "search": 60,
+    # File operations
+    "read": 30,
+    "write": 60,
+    "create": 60,
+    "delete": 30,
+    # Default timeout for unknown tools
+    "default": 120,  # 2 minutes
+}
+
+
+def get_tool_timeout(tool_name: str) -> float:
+    """
+    Get timeout for a specific tool based on its name.
+
+    Args:
+        tool_name: Name of the tool
+
+    Returns:
+        Timeout in seconds
+    """
+    tool_lower = tool_name.lower()
+
+    # Check exact match first
+    if tool_lower in TOOL_TIMEOUT_CONFIG:
+        return TOOL_TIMEOUT_CONFIG[tool_lower]
+
+    # Check if tool name contains any known patterns
+    for pattern, timeout in TOOL_TIMEOUT_CONFIG.items():
+        if pattern != "default" and pattern in tool_lower:
+            return timeout
+
+    # Return default timeout
+    return TOOL_TIMEOUT_CONFIG["default"]
+
 
 class HTTPMCPToolkit(Toolkit):
     """
@@ -98,17 +144,24 @@ class HTTPMCPToolkit(Toolkit):
             Returns:
                 Tool result as string
             """
+            import asyncio
+
             try:
+                # Get appropriate timeout for this tool
+                tool_timeout = get_tool_timeout(tool.name)
+
                 logger.debug(
-                    "Calling HTTP MCP tool %s.%s with args: %s",
+                    "Calling HTTP MCP tool %s.%s with args: %s (timeout: %ss)",
                     self.server_name,
                     tool.name,
                     kwargs,
+                    tool_timeout,
                 )
 
-                # Call the tool via the session
-                result: CallToolResult = await self._session.call_tool(
-                    tool.name, arguments=kwargs
+                # Call the tool via the session with appropriate timeout
+                result: CallToolResult = await asyncio.wait_for(
+                    self._session.call_tool(tool.name, arguments=kwargs),
+                    timeout=tool_timeout,
                 )
 
                 # Extract text content from result
@@ -128,14 +181,16 @@ class HTTPMCPToolkit(Toolkit):
 
             except TimeoutError as exc:
                 # Tool execution timeout
+                tool_timeout = get_tool_timeout(tool.name)
                 error_msg = (
-                    f"Tool '{tool.name}' on server '{self.server_name}' timed out"
+                    f"Tool '{tool.name}' on server '{self.server_name}' "
+                    f"timed out after {tool_timeout}s"
                 )
                 logger.error(error_msg)
                 raise MCPToolExecutionError(
                     server_name=self.server_name,
                     tool_name=tool.name,
-                    reason="Execution timed out",
+                    reason=f"Execution timed out after {tool_timeout}s",
                 ) from exc
             except Exception as exc:
                 # Other tool execution errors

@@ -17,12 +17,12 @@
     "inputHint": "Enter to send, Shift + Enter for new line",
     "send": "Send",
     "user": "You",
-    "assistant": "Assistant",
-    "assistantLabel": "Assistant",
+    "assistant": "Jarvis",
+    "assistantLabel": "Jarvis",
     "userLabel": "You",
     "status": {
       "pending": "Thinking",
-      "generating": "Assistant is crafting a reply...",
+      "generating": "Jarvis is crafting a reply...",
       "streaming": "Streaming reply"
     },
     "error": {
