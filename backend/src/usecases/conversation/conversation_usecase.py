@@ -34,6 +34,7 @@ class ConversationUsecase:
         agent = self._agent_factory.create_agent(
             model_key=payload.model_key,
             session_id=payload.conversation_id,
+            prompt_key=payload.prompt_key,
         )
         self._attach_requested_tools(agent, payload.tools)
         messages = [message.model_dump(mode="python") for message in payload.history]
@@ -70,6 +71,7 @@ class ConversationUsecase:
         agent = self._agent_factory.create_agent(
             model_key=payload.model_key,
             session_id=payload.conversation_id,
+            prompt_key=payload.prompt_key,
         )
         self._attach_requested_tools(agent, payload.tools)
         messages = [message.model_dump(mode="python") for message in payload.history]

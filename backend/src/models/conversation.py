@@ -32,6 +32,10 @@ class ConversationRequest(APIBaseModel):
         default=None,
         description="Requested model key, overrides default",
     )
+    prompt_key: str | None = Field(
+        default=None,
+        description="Requested prompt preset key, defaults to 'default'",
+    )
     tools: list[MCPToolSelection] | None = Field(
         default=None,
         description="Optional list of MCP tool selections to register",
