@@ -5,7 +5,6 @@ from .http_connection import HTTPMCPConnection
 from .http_toolkit import HTTPMCPToolkit
 from .manager import (
     MCPManager,
-    add_peer_node,
     get_available_mcp_servers,
     get_mcp_server_functions,
     get_mcp_status,
@@ -13,12 +12,9 @@ from .manager import (
     graceful_mcp_cleanup,
     initialize_mcp_system,
     is_mcp_initialized,
-    list_peer_nodes,
     reload_all_mcp_servers,
     reload_mcp_server,
-    remove_peer_node,
 )
-from .server import mcp_server
 from .server_params import (
     MCPParamsManager,
     MCPServerParams,
@@ -45,8 +41,4 @@ __all__ = [
     "get_mcp_toolkit",
     "reload_mcp_server",
     "reload_all_mcp_servers",
-    "mcp_server",
-    "add_peer_node",
-    "remove_peer_node",
-    "list_peer_nodes",
 ]

@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.api.exception_handlers import register_exception_handlers
+from src.api.mcp_server import mcp_server
 from src.api.v1.conversation_router import router as conversation_router
 from src.api.v1.mcp_router import router as mcp_router
 from src.config import settings
@@ -12,7 +13,6 @@ from src.core import TraceMiddleware, setup_logging
 from src.integrations.mcp import (
     graceful_mcp_cleanup,
     initialize_mcp_system,
-    mcp_server,
 )
 from src.shared.response import create_success_response
 

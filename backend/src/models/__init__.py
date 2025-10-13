@@ -11,16 +11,11 @@ from .conversation import (
     UpsertLLMModelRequest,
 )
 from .mcp import (
-    AddPeerNodeRequest,
-    AddPeerNodeResponse,
     ListMCPServersResponse,
-    ListPeerNodesResponse,
     MCPServerInfo,
     MCPToolSelection,
-    PeerNodeInfo,
     ReloadAllMCPServersResponse,
     ReloadMCPServerResponse,
-    RemovePeerNodeResponse,
 )
 
 __all__ = [
@@ -37,9 +32,4 @@ __all__ = [
     "ListMCPServersResponse",
     "ReloadMCPServerResponse",
     "ReloadAllMCPServersResponse",
-    "AddPeerNodeRequest",
-    "AddPeerNodeResponse",
-    "RemovePeerNodeResponse",
-    "PeerNodeInfo",
-    "ListPeerNodesResponse",
 ]
