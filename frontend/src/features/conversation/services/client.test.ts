@@ -42,6 +42,7 @@ describe("Conversation Client", () => {
       expect(mockApiClient.post).toHaveBeenCalledWith(
         "/api/v1/conversation",
         payload,
+        { isLongRunning: true },
       );
       expect(result).toEqual(expectedResponse);
     });
