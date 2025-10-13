@@ -18,10 +18,6 @@ type StreamEventHandlers = {
 const SSE_EVENT_PREFIX = "event:";
 const SSE_DATA_PREFIX = "data:";
 
-/**
- * Build URL for SSE endpoint
- * Uses relative path - routing handled by Next.js rewrites (dev) or Nginx (prod)
- */
 function buildAbsoluteUrl(path: string): string {
   if (!path.startsWith("/")) {
     return `/${path}`;
@@ -35,6 +31,7 @@ export async function sendConversationRequest(
   return apiClient.post<ConversationReply>(
     API_PATHS.CONVERSATION.BASE,
     payload,
+    { isLongRunning: true }, // Use long-running timeout
   );
 }
 
@@ -54,6 +51,8 @@ export function streamConversationRequest(
 
   const url = buildAbsoluteUrl(API_PATHS.CONVERSATION.STREAM);
 
+  console.log(`Starting streaming request to: ${url}`);
+
   fetchEventSource(url, {
     method: "POST",
     headers: {
@@ -63,10 +62,13 @@ export function streamConversationRequest(
     body: JSON.stringify(payload),
     credentials: "include",
     signal: controller.signal,
+    openWhenHidden: true,
     onmessage(event) {
+      console.log("Received SSE message:", event.data);
       handleEvent(event.data, handlers);
     },
     async onopen(response) {
+      console.log(`Streaming connection opened, status: ${response.status}`);
       if (response.ok) {
         // Connection opened successfully
       } else {
@@ -76,6 +78,7 @@ export function streamConversationRequest(
       }
     },
     onerror(error) {
+      console.error("Streaming error:", error);
       if (!controller.signal.aborted) {
         handlers.onError?.(
           error instanceof Error ? error : new Error(String(error)),
@@ -83,6 +86,7 @@ export function streamConversationRequest(
       }
     },
     onclose() {
+      console.log("Streaming connection closed");
       if (!controller.signal.aborted) {
         handlers.onComplete?.();
       }

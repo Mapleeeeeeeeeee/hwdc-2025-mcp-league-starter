@@ -4,23 +4,10 @@ import { config } from "../config";
 
 type RequestOptions = RequestInit & {
   parseJson?: boolean;
-  /**
-   * Request timeout in milliseconds.
-   * @default 120000 (120 seconds)
-   *
-   * This timeout is particularly important for long-running operations
-   * such as MCP peer-to-peer communication where processing time can exceed
-   * browser defaults (typically 60s).
-   */
   timeout?: number;
+  isLongRunning?: boolean;
 };
 
-/**
- * Ensures path is a valid relative URL starting with /
- * API routing is handled by:
- * - Development: Next.js rewrites (next.config.ts)
- * - Production: Nginx reverse proxy
- */
 function buildUrl(path: string): string {
   if (!path.startsWith("/")) {
     if (config.isDevelopment) {
@@ -33,17 +20,25 @@ function buildUrl(path: string): string {
 
 export async function apiRequest<T>(
   path: string,
-  { parseJson = true, timeout = 120000, signal, ...init }: RequestOptions = {},
+  {
+    parseJson = true,
+    timeout,
+    isLongRunning = false,
+    signal,
+    ...init
+  }: RequestOptions = {},
 ): Promise<T> {
   const url = buildUrl(path);
 
-  // Create AbortController for timeout
+  const resolvedTimeout =
+    timeout ??
+    (isLongRunning ? config.apiTimeoutLongRunning : config.apiTimeout);
+
   const controller = new AbortController();
   const timeoutId = setTimeout(() => {
     controller.abort();
-  }, timeout);
+  }, resolvedTimeout);
 
-  // Merge caller's signal with timeout signal
   const mergedSignal = signal
     ? createMergedSignal(signal, controller.signal)
     : controller.signal;
@@ -96,13 +91,12 @@ export async function apiRequest<T>(
 
     return payload.data;
   } catch (error) {
-    // Enhance AbortError with timeout information
     if (error instanceof Error && error.name === "AbortError") {
       throw new ApiError(
         408,
         "RequestTimeout",
         undefined,
-        `Request timed out after ${timeout}ms. This may occur during long-running operations.`,
+        `Request timed out after ${resolvedTimeout}ms. This may occur during long-running operations.`,
       );
     }
     throw error;
@@ -111,20 +105,14 @@ export async function apiRequest<T>(
   }
 }
 
-/**
- * Creates a merged AbortSignal that aborts when either signal aborts.
- * Returns the timeout signal if caller signal is already aborted.
- */
 function createMergedSignal(
   callerSignal: AbortSignal,
   timeoutSignal: AbortSignal,
 ): AbortSignal {
-  // If caller already aborted, return timeout signal
   if (callerSignal.aborted) {
     return callerSignal;
   }
 
-  // Create new controller that listens to both signals
   const mergedController = new AbortController();
 
   const abortHandler = () => {
@@ -137,7 +125,6 @@ function createMergedSignal(
   return mergedController.signal;
 }
 
-// Convenience methods for better developer experience
 export const apiClient = {
   get: <T>(
     path: string,
