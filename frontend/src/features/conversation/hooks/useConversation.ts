@@ -21,6 +21,7 @@ interface UseConversationOptions {
   initialMessages?: ChatMessage[];
   userId?: string;
   modelKey?: string;
+  promptKey?: string;
   tools?: McpToolSelection[];
   supportsStreaming?: boolean;
 }
@@ -95,6 +96,7 @@ export function useConversation({
   initialMessages = [],
   userId,
   modelKey,
+  promptKey,
   tools,
   supportsStreaming = false,
 }: UseConversationOptions): UseConversationReturn {
@@ -155,6 +157,7 @@ export function useConversation({
         history,
         userId,
         modelKey,
+        promptKey,
         tools: tools && tools.length > 0 ? tools : undefined,
       };
 
@@ -242,6 +245,7 @@ export function useConversation({
       mutation,
       cancelStream,
       modelKey,
+      promptKey,
       tools,
       supportsStreaming,
       tChat,

@@ -14,6 +14,7 @@ export type ConversationRequestInput = {
   history: ConversationHistory;
   userId?: string;
   modelKey?: string;
+  promptKey?: string;
   tools?: McpToolSelection[];
 };
 
